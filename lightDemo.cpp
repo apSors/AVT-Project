@@ -82,6 +82,18 @@ long myTime,timebase = 0,frame = 0;
 char s[32];
 float lightPos[4] = {4.0f, 6.0f, 2.0f, 1.0f};
 
+int numObj = 0;
+
+int activeCam = 0;
+
+class Camera {
+public:
+	float pos[3] = { 0, 0, 0 };
+	float target[3] = { 0, 0, 0 };
+	int type = 0;
+};
+
+Camera cams[3];
 
 void timer(int value)
 {
@@ -133,8 +145,44 @@ void renderScene(void) {
 	// load identity matrices
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
-	// set the camera using a function similar to gluLookAt
-	lookAt(camX, camY, camZ, 0,0,0, 0,1,0);
+
+	cams[0].pos[0] = camX;
+	cams[0].pos[1] = camY;
+	cams[0].pos[2] = camZ;
+
+	cams[1].type = 1;
+	cams[1].pos[1] = 20;
+
+	cams[2].pos[1] = 20;
+
+	// Follow Cam
+	if (activeCam == 0) {
+		// set the camera using a function similar to gluLookAt
+		lookAt(cams[0].pos[0], cams[0].pos[1], cams[0].pos[2], 0, 0, 0, 0, 1, 0);
+	}
+	// Static Ortho Cam
+	else if (activeCam == 1) {
+		lookAt(cams[1].pos[0], cams[1].pos[1], cams[1].pos[2], 0, 0, 0, 0, 0, 1);
+	}
+	// Static Perspective Cam
+	else if (activeCam == 2) {
+		lookAt(cams[2].pos[0], cams[2].pos[1], cams[2].pos[2], 0, 0, 0, 0, 0, 1);
+	}
+
+	GLint m_view[4];
+
+	glGetIntegerv(GL_VIEWPORT, m_view);
+
+	float ratio = (m_view[2] - m_view[0]) / (m_view[3] - m_view[1]);
+
+	loadIdentity(PROJECTION);
+
+	if (cams[activeCam].type == 0) {
+		perspective(63.13, ratio, 1, 100);
+	}
+	else {
+		ortho(ratio * -25, ratio * 25, -25, 25, 0.1, 100);
+	}
 
 	// use our shader
 	
@@ -149,38 +197,88 @@ void renderScene(void) {
 
 	int objId=0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
-	for (int i = 0 ; i < 2; ++i) {
-		for (int j = 0; j < 2; ++j) {
+	for (int i = 0; i < numObj; ++i) {
 
-			// send the material
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-			glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-			glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-			glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
-			loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-			glUniform1f(loc, myMeshes[objId].mat.shininess);
-			pushMatrix(MODEL);
-			translate(MODEL, i*2.0f, 0.0f, j*2.0f);
-
-			// send matrices to OGL
-			computeDerivedMatrix(PROJ_VIEW_MODEL);
-			glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-			glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-			computeNormalMatrix3x3();
-			glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-			// Render mesh
-			glBindVertexArray(myMeshes[objId].vao);
-			
-			glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
-			glBindVertexArray(0);
-
-			popMatrix(MODEL);
-			objId++;
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[objId].mat.shininess);
+		pushMatrix(MODEL);
+		// """water"""
+		if (i == 0) { 
+			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f); 
+		} 
+		//base of 1st house 
+		else if (i == 2) {
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, 4.5f, 0.0f, 4.5);
 		}
+		//roof of 1st house
+		else if (i == 3) {  
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, 5.0f, 1.0f, 5.0f);
+			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+		}
+		//base of 2nd house 
+		else if (i == 4) { 
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, 4.5f, 0.0f, -1.5f);
+		}
+		//roof of 2nd house 
+		else if (i == 5) { 
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, 5.0f, 1.0f, -1.0f);
+			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+		}
+		//base of 3rd house 
+		else if (i == 6) { 
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, -4.5f, 0.0f, -1.5f);
+		}
+		//roof of 3rd house 
+		else if (i == 7) { 
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, -4.0f, 1.0f, -1.0f);
+			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+		}
+		//handle of the paddle
+		else if (i == 8) { 
+			translate(MODEL, 0.5f, 1.2f, 0.0f);
+			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+		}
+		//head1 of the paddle
+		else if (i == 9) { 
+			translate(MODEL, -0.4f, 1.2f, 0.0f);
+			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f);
+		}
+		//head2 of the paddle
+		else if (i == 10) { 
+			translate(MODEL, 1.4f, 1.2f, 0.0f);
+			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+		}
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(myMeshes[objId].vao);
+			
+		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		objId++;
 	}
+	
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 	glDisable(GL_DEPTH_TEST);
@@ -227,6 +325,25 @@ void processKeys(unsigned char key, int xx, int yy)
 			break;
 		case 'm': glEnable(GL_MULTISAMPLE); break;
 		case 'n': glDisable(GL_MULTISAMPLE); break;
+
+			// Follow Cam
+		case '1':
+			activeCam = 0;
+			break;
+			// Static Ortho Cam
+		case '2':
+			activeCam = 1;
+			break;
+			// Static Perpective Cam
+		case '3':
+			activeCam = 2;
+			break;
+			// Turn boat left
+		case 'a':
+			break;
+			// Turn boat right
+		case 'd':
+			break;
 	}
 }
 
@@ -399,15 +516,140 @@ void init()
 	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camY = r *   						     sin(beta * 3.14f / 180.0f);
 
-	
+	//values for the """water"""
 	float amb[]= {0.2f, 0.15f, 0.1f, 1.0f};
-	float diff[] = {0.8f, 0.6f, 0.4f, 1.0f};
+	float diff[] = {0.0f, 0.0f, 13.0f, 0.0f};
 	float spec[] = {0.8f, 0.8f, 0.8f, 1.0f};
 	float emissive[] = {0.0f, 0.0f, 0.0f, 1.0f};
 	float shininess= 100.0f;
 	int texcount = 0;
 
-	// create geometry and VAO of the pawn
+	//create the water quad
+	amesh = createQuad(100.0f, 100.0f);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+
+	//value for the boat
+	diff[0] = 0.8f; 
+	diff[1] = 0.6f;
+	diff[2] = 0.4f;
+	diff[3] = 1.0f;
+	//create the boat cube
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+
+	//lets try making a house
+	//base of the house
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//roof of the house
+	amesh = createCone(0.5, 1.0, 4);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+
+	//antoher one
+	//base of the house
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//roof of the house
+	amesh = createCone(0.5, 1.0, 4);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+
+	//and antoher one
+	//base of the house
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//roof of the house
+	amesh = createCone(0.5, 1.0, 4);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+
+	//lets do the paddle for the boat
+	//handle
+	amesh = createCylinder(1.5f, 0.05f, 20);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//head1
+	amesh = createCone(0.25, 0.25, 2);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//head2
+	amesh = createCone(0.25, 0.25, 2);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+
+	/*// create geometry and VAO of the pawn
 	amesh = createPawn();
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -451,7 +693,7 @@ void init()
 	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
+	myMeshes.push_back(amesh);*/
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);
@@ -468,6 +710,15 @@ void init()
 
 
 int main(int argc, char **argv) {
+
+	cams[0].pos[0] = camX;
+	cams[0].pos[1] = camY;
+	cams[0].pos[2] = camZ;
+
+	cams[1].type = 1;
+	cams[1].pos[1] = 50;
+
+	cams[2].pos[1] = 50;
 
 //  GLUT initialization
 	glutInit(&argc, argv);
