@@ -97,8 +97,8 @@ Camera cams[3];
 
 class Boat {
 public:
-	float speed = 0.0f;
-	float direction = 20;
+	float speed = 1.0f;
+	float direction = 0.0f;
 	float pos[3] = { 0.0f, 0.0f, 0.0f };
 };
 
@@ -117,8 +117,9 @@ void timer(int value)
 	FrameCount = 0;
 
 	// Boat movement logic
-	for (int i = 0; i < 3; i++) {
-		boat.pos[i] += boat.speed * boat.direction * deltaT;
+	for (int i = 0; i < 2; i++) {  // Update x and y only
+		boat.pos[i] += boat.speed * cos(boat.direction) * deltaT;  
+		boat.pos[i + 1] += boat.speed * sin(boat.direction) * deltaT;  
 	}
 
 	if (boat.speed > 0) {
@@ -362,11 +363,11 @@ void processKeys(unsigned char key, int xx, int yy)
 		activeCam = 2;
 		break;
 	case 'a':  // Move Left
-		boat.direction = -20;  // Negative direction for left
+		boat.direction -= 5.0f;  // Negative direction for left
 		boat.speed = 5.0f;  // Set the speed
 		break;
 	case 'd':  // Move Right
-		boat.direction = 20;  // Positive direction for right
+		boat.direction += 5.0f;  // Positive direction for right
 		boat.speed = 5.0f;  // Set the speed
 		break;
 	}
