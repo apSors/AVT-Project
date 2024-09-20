@@ -83,6 +83,18 @@ char s[32];
 float lightPos[4] = {4.0f, 6.0f, 2.0f, 1.0f};
 
 
+class Boat {
+public:
+	float speed = 0.0f;
+	float direction = 20;
+	float pos[3] = { 0.0f, 0.0f, 0.0f };
+};
+
+Boat boat;
+
+float deltaT = 0.05f;
+float decayy = 0.01f;
+
 void timer(int value)
 {
 	std::ostringstream oss;
@@ -91,7 +103,18 @@ void timer(int value)
 	glutSetWindow(WindowHandle);
 	glutSetWindowTitle(s.c_str());
     FrameCount = 0;
-    glutTimerFunc(1000, timer, 0);
+
+	// Boat movement logic
+	for (int i = 0; i < 3; i++) {
+		boat.pos[i] += boat.speed * boat.direction * deltaT;
+	}
+
+	if (boat.speed > 0) {
+		boat.speed -= decayy;
+		if (boat.speed < 0) boat.speed = 0;
+	}
+
+	glutTimerFunc(1/deltaT, timer, 0);
 }
 
 void refresh(int value)
@@ -227,6 +250,29 @@ void processKeys(unsigned char key, int xx, int yy)
 			break;
 		case 'm': glEnable(GL_MULTISAMPLE); break;
 		case 'n': glDisable(GL_MULTISAMPLE); break;
+<<<<<<< Updated upstream
+=======
+
+			// Follow Cam
+		case '1':
+			activeCam = 0;
+			break;
+			// Static Ortho Cam
+		case '2':
+			activeCam = 1;
+			break;
+			// Static Perpective Cam
+		case '3':
+			activeCam = 2;
+			break;
+			// Turn boat left
+		case 'a':
+			boat.direction += 1;
+			break;
+		case 'd':
+			boat.direction -= 1;
+			break;
+>>>>>>> Stashed changes
 	}
 }
 
