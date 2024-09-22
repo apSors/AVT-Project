@@ -289,6 +289,18 @@ void renderScene(void) {
 			translate(MODEL, 1.4f, 1.2f, 0.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
+		//shark 1
+		else if (i == 11) {
+			translate(MODEL, 5.0f, 0.0f, 5.0f);
+			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+		}
+		
+		//shark 2
+		else if (i == 12) {
+			translate(MODEL, 4.0f, 0.0f, -7.0f);
+			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+		}
+		
 
 		// send matrices to OGL
 		computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -566,6 +578,8 @@ void init()
 	myMeshes.push_back(amesh);
 	numObj++;
 
+
+
 	//value for the boat
 	diff[0] = 0.8f;
 	diff[1] = 0.6f;
@@ -679,6 +693,30 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	numObj++;
+
+	//shark 1
+	amesh = createCone(1, 1, 3);
+	memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 10 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 10 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+
+	//shark 2
+	amesh = createCone(1, 1, 3);
+	memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 10 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 10 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+
+
 
 	/*// create geometry and VAO of the pawn
 	amesh = createPawn();
