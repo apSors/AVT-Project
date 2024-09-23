@@ -118,8 +118,8 @@ void timer(int value)
 
 	// Boat movement logic
 	for (int i = 0; i < 2; i++) {  // Update x and y only
-		boat.pos[i] += boat.speed * deltaT;  
-		boat.pos[i + 1] += boat.speed * deltaT;  
+		boat.pos[i] += (boat.speed * cos(boat.angle * 3.14/180) * deltaT)/10;  
+		boat.pos[i + 1] += (boat.speed * sin(boat.angle * 3.14 / 180) * deltaT)/10;
 	}
 
 	if (boat.speed > 0) {
@@ -170,9 +170,9 @@ void renderScene(void) {
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
 
-	cams[0].pos[0] = camX;
-	cams[0].pos[1] = camY;
-	cams[0].pos[2] = camZ;
+	cams[0].pos[0] = camX + boat.pos[1];
+	cams[0].pos[1] = camY + boat.pos[3];
+	cams[0].pos[2] = camZ + boat.pos[2];
 
 	cams[1].type = 1;
 	cams[1].pos[1] = 20;
@@ -182,7 +182,7 @@ void renderScene(void) {
 	// Follow Cam
 	if (activeCam == 0) {
 		// set the camera using a function similar to gluLookAt
-		lookAt(cams[0].pos[0], cams[0].pos[1], cams[0].pos[2], boat.pos[1]/10, boat.pos[3]/10, boat.pos[2]/10, 0, 1, 0);
+		lookAt(cams[0].pos[0], cams[0].pos[1], cams[0].pos[2], boat.pos[1], boat.pos[3], boat.pos[2], 0, 1, 0);
 	}
 	// Static Ortho Cam
 	else if (activeCam == 1) {
@@ -239,7 +239,7 @@ void renderScene(void) {
 		}
 		if (i == 1)
 		{
-			translate(MODEL, boat.pos[1]/10, boat.pos[3]/10, boat.pos[2]/10);
+			translate(MODEL, boat.pos[1] - 0.5f, boat.pos[3], boat.pos[2] - 0.5f);
 		}
 		//base of 1st house 
 		else if (i == 2) {
@@ -367,12 +367,16 @@ void processKeys(unsigned char key, int xx, int yy)
 		activeCam = 2;
 		break;
 	case 'a': // Move Left
-		boat.angle -= 5.0f;  // Negative direction for left
+		boat.angle -= 45.0f;  // Negative direction for left
 		boat.speed = 5.0f;  // Set the speed
+		rotate(MODEL, -20.0f, 0.0f, 0.0f, 1.0f);
 		break;
 	case 'd':  // Move Right
-		boat.angle += 5.0f;  // Positive direction for right
+		boat.angle += 45.0f;  // Positive direction for right
 		boat.speed = 5.0f;  // Set the speed
+		break;
+	case 's':
+		boat.speed = -5.0f;
 		break;
 	}
 }
@@ -445,9 +449,9 @@ void processMouseMotion(int xx, int yy)
 			rAux = 0.1f;
 	}
 
-	camX = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f) + boat.pos[1]/10;
-	camZ = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f) + boat.pos[3]/10;
-	camY = rAux * sin(betaAux * 3.14f / 180.0f) + boat.pos[2]/10;
+	camX = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
+	camZ = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
+	camY = rAux * sin(betaAux * 3.14f / 180.0f);
 
 
 	//  uncomment this if not using an idle or refresh func
