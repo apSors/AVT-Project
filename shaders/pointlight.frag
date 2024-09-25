@@ -13,29 +13,67 @@ struct Materials {
 
 uniform Materials mat;
 
+uniform float sl_angle;		// Spotlight angle
+uniform float sl_angle2;	// Spotlight 2 angle
+uniform float sl_exp;		// Spotlight quality 
+uniform float sl_exp2;		// Spotlight 2 quality
+
 in Data {
 	vec3 normal;
 	vec3 eye;
 	vec3 lightDir;
+	vec3 lightDir2;
+	vec3 lightDir3;
+	vec3 spotLightDir;
+	vec3 spotLightDir2;
 } DataIn;
 
 void main() {
 
-	vec4 spec = vec4(0.0);
+	vec4 totalDiffuse = vec4(0.0);
+	vec4 totalSpecular = vec4(0.0);
 
 	vec3 n = normalize(DataIn.normal);
-	vec3 l = normalize(DataIn.lightDir);
 	vec3 e = normalize(DataIn.eye);
 
-	float intensity = max(dot(n,l), 0.0);
-
-	
+	// Light 1 - Point light
+	vec3 l1 = normalize(DataIn.lightDir);
+	float intensity = max(dot(n, l1), 0.0);
 	if (intensity > 0.0) {
-
-		vec3 h = normalize(l + e);
-		float intSpec = max(dot(h,n), 0.0);
-		spec = mat.specular * pow(intSpec, mat.shininess);
+		vec3 h1 = normalize(l1 + e);
+		float intSpec = max(dot(h1, n), 0.0);
+		totalSpecular += mat.specular * pow(intSpec, mat.shininess);
 	}
-	
-	colorOut = max(intensity * mat.diffuse + spec, mat.ambient);
+	totalDiffuse += intensity * mat.diffuse;
+
+	// Light 2 - Spotlight
+	vec3 l2 = normalize(DataIn.lightDir2);
+	float spotEffect = dot(normalize(DataIn.spotLightDir), -l2);  // Angle between spotlight direction and light direction
+	if (spotEffect > sl_angle) {
+		float attenuation = pow(spotEffect, sl_exp);  // Spot attenuation
+		float intensity2 = max(dot(n, l2), 0.0) * attenuation;
+		if (intensity2 > 0.0) {
+			vec3 h2 = normalize(l2 + e);
+			float intSpec2 = max(dot(h2, n), 0.0);
+			totalSpecular += mat.specular * pow(intSpec2, mat.shininess) * attenuation;
+		}
+		totalDiffuse += intensity2 * mat.diffuse;
+	}
+
+	// Light 3 - Spotlight 2
+	vec3 l3 = normalize(DataIn.lightDir3);
+	float spotEffect2 = dot(normalize(DataIn.spotLightDir2), -l3);  // Angle between spotlight direction and light direction
+	if (spotEffect2 > sl_angle2) {
+		float attenuation2 = pow(spotEffect2, sl_exp2);  // Spot attenuation
+		float intensity3 = max(dot(n, l3), 0.0) * attenuation2;
+		if (intensity3 > 0.0) {
+			vec3 h3 = normalize(l3 + e);
+			float intSpec3 = max(dot(h3, n), 0.0);
+			totalSpecular += mat.specular * pow(intSpec3, mat.shininess) * attenuation2;
+		}
+		totalDiffuse += intensity3 * mat.diffuse;
+	}
+
+	// Combine results
+	colorOut = max(totalDiffuse + totalSpecular, mat.ambient);
 }
