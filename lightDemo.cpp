@@ -315,18 +315,21 @@ void renderScene(void) {
 		}
 		//handle of the paddle
 		else if (i == 8) {
-			translate(MODEL, 0.5f, 1.2f, 0.0f);
-			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+			translate(MODEL, boat.pos[0] + 0.5f, boat.pos[2] + 1.2f, boat.pos[1]);
+			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);  // Rotate with the boat
+			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);            // Paddle rotation
 		}
 		//head1 of the paddle
 		else if (i == 9) {
-			translate(MODEL, -0.4f, 1.2f, 0.0f);
-			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f);
+			translate(MODEL, boat.pos[0] - 0.4f, boat.pos[2] + 1.2f, boat.pos[1]);
+			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);  // Rotate with the boat
+			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f);           // Head1 rotation
 		}
 		//head2 of the paddle
 		else if (i == 10) {
-			translate(MODEL, 1.4f, 1.2f, 0.0f);
-			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+			translate(MODEL, boat.pos[0] + 1.4f, boat.pos[2] + 1.2f, boat.pos[1]);
+			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);  // Rotate with the boat
+			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);            // Head2 rotation
 		}
 		//shark 1
 		else if (i == 11) {
