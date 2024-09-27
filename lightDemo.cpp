@@ -98,8 +98,9 @@ Camera cams[3];
 class Boat {
 public:
 	float speed = 0.0f;
-	float angle = 0.0f;
 	float pos[3] = { 0.0f, 0.0f, 0.0f };
+	float angle = 0.0f;
+	float direction = 0.0f;
 };
 
 Boat boat;
@@ -117,15 +118,51 @@ void timer(int value)
 	FrameCount = 0;
 
 	// Boat movement logic
-	for (int i = 0; i < 2; i++) {  // Update x and y only
-		boat.pos[i] += (boat.speed * cos(boat.angle * 3.14/180) * deltaT)/10;  
-		boat.pos[i + 1] += (boat.speed * sin(boat.angle * 3.14 / 180) * deltaT)/10;
-	}
+	//for (int i = 0; i < 2; i++) {  // Update x and y only
+	boat.pos[0] += (boat.speed * cos(boat.direction * 3.14 / 180) * deltaT) / 10;
+	boat.pos[1] += (boat.speed * sin(boat.direction * 3.14 / 180) * deltaT) / 10;
+	//}
 
+	//handle boat speed decay, both forwards and backwards
 	if (boat.speed > 0) {
 		boat.speed -= decayy;
 		if (boat.speed < 0) boat.speed = 0;
 	}
+	else if (boat.speed < 0)
+	{
+		boat.speed += decayy;
+		if (boat.speed > 0) boat.speed = 0;
+	}
+
+	//handle boat angle incremental increase, to make the rotation animation
+	if ((boat.angle - boat.direction) > 0)
+	{
+		boat.direction += decayy * 6;
+		if ((boat.direction > boat.angle) && (boat.speed == 0) || (boat.speed == 0))
+		{
+			boat.angle = boat.direction;
+		}
+	}
+	else if ((boat.angle - boat.direction) < 0)
+	{
+		boat.direction -= decayy * 6;
+		if ((boat.direction < boat.angle) && (boat.speed == 0) || (boat.speed == 0))
+		{
+			boat.angle = boat.direction;
+		}
+	}
+	else if (boat.angle == 0)
+	{
+		if (boat.direction > boat.angle)
+		{
+			boat.direction -= decayy * 6;
+		}
+		else if (boat.direction < boat.angle)
+		{
+			boat.direction += decayy * 6;
+		}
+	}
+
 
 	glutTimerFunc(1 / deltaT, timer, 0);
 }
@@ -170,9 +207,9 @@ void renderScene(void) {
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
 
-	cams[0].pos[0] = camX + boat.pos[1];
-	cams[0].pos[1] = camY + boat.pos[3];
-	cams[0].pos[2] = camZ + boat.pos[2];
+	cams[0].pos[0] = camX + boat.pos[0];
+	cams[0].pos[1] = camY + boat.pos[2];
+	cams[0].pos[2] = camZ + boat.pos[1];
 
 	cams[1].type = 1;
 	cams[1].pos[1] = 20;
@@ -182,13 +219,13 @@ void renderScene(void) {
 	// Follow Cam
 	if (activeCam == 0) {
 		// set the camera using a function similar to gluLookAt
-		lookAt(cams[0].pos[0], cams[0].pos[1], cams[0].pos[2], boat.pos[1], boat.pos[3], boat.pos[2], 0, 1, 0);
+		lookAt(cams[0].pos[0], cams[0].pos[1], cams[0].pos[2], boat.pos[0], boat.pos[2], boat.pos[1], 0, 1, 0);
 	}
 	// Static Ortho Cam
 	else if (activeCam == 1) {
 		lookAt(cams[1].pos[0], cams[1].pos[1], cams[1].pos[2], 0, 0, 0, 0, 0, 1);
 	}
-	// Static Perspective Cam
+	// Static Perspective 
 	else if (activeCam == 2) {
 		lookAt(cams[2].pos[0], cams[2].pos[1], cams[2].pos[2], 0, 0, 0, 0, 0, 1);
 	}
@@ -237,9 +274,11 @@ void renderScene(void) {
 		if (i == 0) {
 			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
 		}
+		// boat
 		if (i == 1)
 		{
-			translate(MODEL, boat.pos[1] - 0.5f, boat.pos[3], boat.pos[2] - 0.5f);
+			translate(MODEL, boat.pos[0] - 0.0f, boat.pos[2], boat.pos[1] - 0.0f);
+			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
 		}
 		//base of 1st house 
 		else if (i == 2) {
@@ -294,7 +333,6 @@ void renderScene(void) {
 			translate(MODEL, 5.0f, 0.0f, 5.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
-		
 		//shark 2
 		else if (i == 12) {
 			translate(MODEL, 4.0f, 0.0f, -7.0f);
@@ -379,16 +417,26 @@ void processKeys(unsigned char key, int xx, int yy)
 		activeCam = 2;
 		break;
 	case 'a': // Move Left
-		boat.angle -= 45.0f;  // Negative direction for left
+		boat.angle -= 30.0f;  // Negative direction for left
+		if ((boat.angle / 360) < -1.0f)
+		{
+			boat.angle += 360;
+			boat.direction += 360;
+		}
 		boat.speed = 5.0f;  // Set the speed
-		rotate(MODEL, -20.0f, 0.0f, 0.0f, 1.0f);
 		break;
 	case 'd':  // Move Right
-		boat.angle += 45.0f;  // Positive direction for right
+		boat.angle += 30.0f;  // Positive direction for right
+		if ((boat.angle / 360) > 1.0f)
+		{
+			boat.angle -= 360;
+			boat.direction -= 360;
+		}
 		boat.speed = 5.0f;  // Set the speed
 		break;
 	case 's':
 		boat.speed = -5.0f;
+		boat.angle = boat.direction;
 		break;
 	}
 }
