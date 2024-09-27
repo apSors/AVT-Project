@@ -1,31 +1,4 @@
-﻿  avtFreeType.cpp
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\avtFreeType.cpp(88,35): warning C4838: conversion from 'unsigned int' to 'int' requires a narrowing conversion
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\avtFreeType.cpp(88,62): warning C4838: conversion from 'unsigned int' to 'int' requires a narrowing conversion
-  AVTmathLib.cpp
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\AVTmathLib.cpp(145,11): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\AVTmathLib.cpp(146,11): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\AVTmathLib.cpp(234,10): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\AVTmathLib.cpp(375,12): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\AVTmathLib.cpp(402,8): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\AVTmathLib.cpp(443,62): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\AVTmathLib.cpp(444,62): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\AVTmathLib.cpp(446,40): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-  basic_geometry.cpp
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\basic_geometry.cpp(172,32): warning C4267: 'argument': conversion from 'size_t' to 'int', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\basic_geometry.cpp(294,44): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\basic_geometry.cpp(296,44): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\basic_geometry.cpp(299,48): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\basic_geometry.cpp(301,48): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\basic_geometry.cpp(317,45): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\basic_geometry.cpp(319,45): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\basic_geometry.cpp(322,53): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\basic_geometry.cpp(324,53): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\basic_geometry.cpp(408,11): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\basic_geometry.cpp(416,11): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\basic_geometry.cpp(436,11): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\basic_geometry.cpp(457,48): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\basic_geometry.cpp(458,48): warning C4244: '=': conversion from 'double' to 'float', possible loss of data
-  lightDemo.cpp
+﻿  lightDemo.cpp
 C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\lightDemo.cpp(122,74): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
 C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\lightDemo.cpp(123,74): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
 C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\lightDemo.cpp(167,18): warning C4244: 'argument': conversion from 'float' to 'unsigned int', possible loss of data
@@ -37,17 +10,9 @@ C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\lightDemo.c
 C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\lightDemo.cpp(376,53): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
 C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\lightDemo.cpp(376,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
 C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\lightDemo.cpp(378,84): warning C4305: 'argument': truncation from 'double' to 'float'
-  Texture_Loader.cpp
   vsShaderLib.cpp
 C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\vsShaderLib.cpp(569,18): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
   Generating Code...
   LINK : C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\x64\Debug\AVT_Project.exe not found or not built by the last incremental link; performing full link
   AVT_Project.vcxproj -> C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\x64\Debug\AVT_Project.exe
-  C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\Dependencies\lib\x64\assimp-vc142-mt.dll
-  C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\Dependencies\lib\x64\DevIL.dll
-  C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\Dependencies\lib\x64\freeglut.dll
-  C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\Dependencies\lib\x64\freetype.dll
-  C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\Dependencies\lib\x64\glew32.dll
-  C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\Dependencies\lib\x64\ILU.dll
-  C:\Users\Lucas\Documents\IST\1st_year\P1\AVT\Projeto\git\AVT-Project\Dependencies\lib\x64\ILUT.dll
-  7 File(s) copied
+  0 File(s) copied
