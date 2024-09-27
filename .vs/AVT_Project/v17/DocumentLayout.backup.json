@@ -3,12 +3,15 @@
   "WorkspaceRootPath": "C:\\MEIC\\1sem\\AVT\\Git\\AVT-Project\\",
   "Documents": [
     {
+      "AbsoluteMoniker": "D:0:0:{1E2B5948-8A77-46FD-9975-23A0B700B4CD}|AVT_Project.vcxproj|C:\\MEIC\\1sem\\AVT\\Git\\AVT-Project\\shaders\\pointlight.frag||{8B382828-6202-11D1-8870-0000F87579D2}",
+      "RelativeMoniker": "D:0:0:{1E2B5948-8A77-46FD-9975-23A0B700B4CD}|AVT_Project.vcxproj|solutionrelative:shaders\\pointlight.frag||{8B382828-6202-11D1-8870-0000F87579D2}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{1E2B5948-8A77-46FD-9975-23A0B700B4CD}|AVT_Project.vcxproj|C:\\MEIC\\1sem\\AVT\\Git\\AVT-Project\\lightDemo.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
       "RelativeMoniker": "D:0:0:{1E2B5948-8A77-46FD-9975-23A0B700B4CD}|AVT_Project.vcxproj|solutionrelative:lightDemo.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{1E2B5948-8A77-46FD-9975-23A0B700B4CD}|AVT_Project.vcxproj|C:\\MEIC\\1sem\\AVT\\Git\\AVT-Project\\shaders\\pointlight.frag||{8B382828-6202-11D1-8870-0000F87579D2}",
-      "RelativeMoniker": "D:0:0:{1E2B5948-8A77-46FD-9975-23A0B700B4CD}|AVT_Project.vcxproj|solutionrelative:shaders\\pointlight.frag||{8B382828-6202-11D1-8870-0000F87579D2}"
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|C:\\Users\\Nuno Cov\u00E3o\\AppData\\Local\\Temp\\Rar$DIa12892.33719\\multiTexDemo.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{1E2B5948-8A77-46FD-9975-23A0B700B4CD}|AVT_Project.vcxproj|C:\\MEIC\\1sem\\AVT\\Git\\AVT-Project\\shaders\\pointlight.vert||{8B382828-6202-11D1-8870-0000F87579D2}",
@@ -36,17 +39,17 @@
         },
         {
           "DockedWidth": 318,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "lightDemo.cpp",
               "DocumentMoniker": "C:\\MEIC\\1sem\\AVT\\Git\\AVT-Project\\lightDemo.cpp",
               "RelativeDocumentMoniker": "lightDemo.cpp",
               "ToolTip": "C:\\MEIC\\1sem\\AVT\\Git\\AVT-Project\\lightDemo.cpp",
               "RelativeToolTip": "lightDemo.cpp",
-              "ViewState": "AgIAAE4AAAAAAAAAAAAAAFsAAAAdAAAAAAAAAA==",
+              "ViewState": "AgIAAFIAAAAAAAAAAAAAAGMAAAAVAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
               "WhenOpened": "2024-09-25T10:10:37.009Z",
               "IsPinned": true,
@@ -54,20 +57,33 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 2,
+              "Title": "multiTexDemo.cpp",
+              "DocumentMoniker": "C:\\Users\\Nuno Cov\u00E3o\\AppData\\Local\\Temp\\Rar$DIa12892.33719\\multiTexDemo.cpp",
+              "RelativeDocumentMoniker": "..\\..\\..\\..\\..\\Users\\Nuno Cov\u00E3o\\AppData\\Local\\Temp\\Rar$DIa12892.33719\\multiTexDemo.cpp",
+              "ToolTip": "C:\\Users\\Nuno Cov\u00E3o\\AppData\\Local\\Temp\\Rar$DIa12892.33719\\multiTexDemo.cpp",
+              "RelativeToolTip": "..\\..\\..\\..\\..\\Users\\Nuno Cov\u00E3o\\AppData\\Local\\Temp\\Rar$DIa12892.33719\\multiTexDemo.cpp",
+              "ViewState": "AgIAAKUBAAAAAAAAAAAgwFwAAAATAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2024-09-27T11:12:07.911Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
               "Title": "pointlight.frag",
               "DocumentMoniker": "C:\\MEIC\\1sem\\AVT\\Git\\AVT-Project\\shaders\\pointlight.frag",
               "RelativeDocumentMoniker": "shaders\\pointlight.frag",
               "ToolTip": "C:\\MEIC\\1sem\\AVT\\Git\\AVT-Project\\shaders\\pointlight.frag",
               "RelativeToolTip": "shaders\\pointlight.frag",
-              "ViewState": "AgIAAB4AAAAAAAAAAAAAACAAAAASAAAAAAAAAA==",
+              "ViewState": "AgIAABoAAAAAAAAAAAAAADIAAAA5AAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001001|",
               "WhenOpened": "2024-09-25T10:16:48.12Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 3,
               "Title": "pointlight.vert",
               "DocumentMoniker": "C:\\MEIC\\1sem\\AVT\\Git\\AVT-Project\\shaders\\pointlight.vert",
               "RelativeDocumentMoniker": "shaders\\pointlight.vert",

@@ -97,7 +97,7 @@ float spotLightPos2[4] = {-10.0f, 4.0f, -10.0f, 1.0f};	// Spotlight 2 world post
 float spotLightDir[4] = {0.0f, 0.0f, 0.0f, 1.0f};	// Spotlight pointing diretion 
 float spotLightDir2[4] = {-10.0f, 0.0f, -10.0f, 1.0f};	// Spotlight 2 pointing diretion
 
-float slAngle = cos(45);	// Spotlight angle
+float slAngle = cos(30);	// Spotlight angle
 float slAngle2 = cos(30);	// Spotlight 2 angle 
 
 float slExp = 20.0;		// Spotlight quality
