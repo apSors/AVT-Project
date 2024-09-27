@@ -110,6 +110,7 @@ public:
 
 Boat boat;
 
+float deltaT = 0.05f;
 float decayy = 0.1f;
 
 void timer(int value)
