@@ -82,9 +82,13 @@ long myTime, timebase = 0, frame = 0;
 char s[32];
 float lightPos[4] = { 4.0f, 6.0f, 2.0f, 1.0f };
 
+//number of objects to be drawn
 int numObj = 0;
 
 int activeCam = 0;
+
+//variable used to switch speeds using 'o'
+int speedSwitch = 0;
 
 class Camera {
 public:
@@ -137,7 +141,7 @@ void timer(int value)
 	//handle boat angle incremental increase, to make the rotation animation
 	if ((boat.angle - boat.direction) > 0)
 	{
-		boat.direction += decayy * 6;
+		boat.direction += decayy * (6 - (3.0f * speedSwitch));
 		if ((boat.direction > boat.angle) && (boat.speed == 0) || (boat.speed == 0))
 		{
 			boat.angle = boat.direction;
@@ -145,7 +149,7 @@ void timer(int value)
 	}
 	else if ((boat.angle - boat.direction) < 0)
 	{
-		boat.direction -= decayy * 6;
+		boat.direction -= decayy * (6 - (3.0f * speedSwitch));
 		if ((boat.direction < boat.angle) && (boat.speed == 0) || (boat.speed == 0))
 		{
 			boat.angle = boat.direction;
@@ -155,11 +159,11 @@ void timer(int value)
 	{
 		if (boat.direction > boat.angle)
 		{
-			boat.direction -= decayy * 6;
+			boat.direction -= decayy * (6 - (3.0f * speedSwitch));
 		}
 		else if (boat.direction < boat.angle)
 		{
-			boat.direction += decayy * 6;
+			boat.direction += decayy * (6 - (3.0f * speedSwitch));
 		}
 	}
 
@@ -423,7 +427,7 @@ void processKeys(unsigned char key, int xx, int yy)
 			boat.angle += 360;
 			boat.direction += 360;
 		}
-		boat.speed = 5.0f;  // Set the speed
+		boat.speed = 5.0f + (5.0f * speedSwitch);  // Set the speed
 		break;
 	case 'd':  // Move Right
 		boat.angle += 30.0f;  // Positive direction for right
@@ -432,12 +436,21 @@ void processKeys(unsigned char key, int xx, int yy)
 			boat.angle -= 360;
 			boat.direction -= 360;
 		}
-		boat.speed = 5.0f;  // Set the speed
+		boat.speed = 5.0f + (5.0f * speedSwitch);  // Set the speed
 		break;
 	case 's':
-		boat.speed = -5.0f;
+		boat.speed = -5.0f - (5.0f * speedSwitch);
 		boat.angle = boat.direction;
 		break;
+	case 'o':
+		//increase speedSwitch for speed change logic
+		speedSwitch++;
+		//if speedswitch is 2 or more, return to 0
+		if (speedSwitch >= 2)
+		{
+			speedSwitch = 0;
+		}
+	
 	}
 }
 
