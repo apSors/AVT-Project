@@ -102,6 +102,7 @@ Camera cams[3];
 class Boat {
 public:
 	float speed = 0.0f;
+	float acceleration = 0.0f;
 	float pos[3] = { 0.0f, 0.0f, 0.0f };
 	float angle = 0.0f;
 	float direction = 0.0f;
@@ -109,7 +110,6 @@ public:
 
 Boat boat;
 
-float deltaT = 0.5f;
 float decayy = 0.1f;
 
 void timer(int value)
@@ -123,8 +123,8 @@ void timer(int value)
 
 	// Boat movement logic
 	//for (int i = 0; i < 2; i++) {  // Update x and y only
-	boat.pos[0] += (boat.speed * cos(boat.direction * 3.14 / 180) * deltaT) / 10;
-	boat.pos[1] += (boat.speed * sin(boat.direction * 3.14 / 180) * deltaT) / 10;
+	boat.pos[0] += ((boat.speed * deltaT) + (1/2 * boat.acceleration * pow(deltaT,2))) * cos(boat.direction * 3.14 / 180);
+	boat.pos[1] += boat.speed * sin(boat.direction * 3.14 / 180) * deltaT;
 	//}
 
 	//handle boat speed decay, both forwards and backwards
@@ -168,7 +168,7 @@ void timer(int value)
 	}
 
 
-	glutTimerFunc(1 / deltaT, timer, 0);
+	glutTimerFunc(10 / deltaT, timer, 0);
 }
 
 void refresh(int value)
@@ -319,21 +319,18 @@ void renderScene(void) {
 		}
 		//handle of the paddle
 		else if (i == 8) {
-			translate(MODEL, boat.pos[0] + 0.5f, boat.pos[2] + 1.2f, boat.pos[1]);
-			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);  // Rotate with the boat
-			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);            // Paddle rotation
+			translate(MODEL, 0.5f, 1.2f, 0.0f);
+			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//head1 of the paddle
 		else if (i == 9) {
-			translate(MODEL, boat.pos[0] - 0.4f, boat.pos[2] + 1.2f, boat.pos[1]);
-			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);  // Rotate with the boat
-			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f);           // Head1 rotation
+			translate(MODEL, -0.4f, 1.2f, 0.0f);
+			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//head2 of the paddle
 		else if (i == 10) {
-			translate(MODEL, boat.pos[0] + 1.4f, boat.pos[2] + 1.2f, boat.pos[1]);
-			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);  // Rotate with the boat
-			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);            // Head2 rotation
+			translate(MODEL, 1.4f, 1.2f, 0.0f);
+			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//shark 1
 		else if (i == 11) {
@@ -430,7 +427,7 @@ void processKeys(unsigned char key, int xx, int yy)
 			boat.angle += 360;
 			boat.direction += 360;
 		}
-		boat.speed = 5.0f + (5.0f * speedSwitch);  // Set the speed
+		boat.acceleration = 5.0f + (5.0f * speedSwitch);  // Set the speed
 		break;
 	case 'd':  // Move Right
 		boat.angle += 30.0f;  // Positive direction for right
@@ -439,10 +436,10 @@ void processKeys(unsigned char key, int xx, int yy)
 			boat.angle -= 360;
 			boat.direction -= 360;
 		}
-		boat.speed = 5.0f + (5.0f * speedSwitch);  // Set the speed
+		boat.acceleration = 5.0f + (5.0f * speedSwitch);  // Set the speed
 		break;
 	case 's':
-		boat.speed = -5.0f - (5.0f * speedSwitch);
+		boat.acceleration = -5.0f - (5.0f * speedSwitch);
 		boat.angle = boat.direction;
 		break;
 	case 'o':
