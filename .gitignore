@@ -444,3 +444,8 @@ AVT_Project/x64/Debug/AVT_Project.tlog/CL.read.1.tlog
 AVT_Project/x64/Debug/AVT_Project.tlog/CL.command.1.tlog
 AVT_Project/x64/Debug/AVT_Project.log
 AVT_Project/x64/Debug/AVT_Project.ilk
+AVT_Project.vcxproj.filters
+Dependencies/
+Dependencies.exe
+fonts/
+freetype/
