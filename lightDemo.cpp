@@ -33,6 +33,7 @@
 #include "geometry.h"
 
 #include "avtFreeType.h"
+#include "Texture_Loader.h"
 
 using namespace std;
 
@@ -91,17 +92,17 @@ long myTime,timebase = 0,frame = 0;
 char s[32];
 float lightPos[4] = {10.0f, 6.0f, 10.0f, 1.0f};			// Point light world position
 
-float spotLightPos[4] = {0.0f, 2.0f, 0.0f, 1.0f};		// Spotlight world position
-float spotLightPos2[4] = {-10.0f, 4.0f, -10.0f, 1.0f};	// Spotlight 2 world postion
+float spotLightPos[4] = {0.0f, 3.0f, 0.0f, 1.0f};		// Spotlight world position
+float spotLightPos2[4] = {-3.0f, 4.0f, -4.0f, 1.0f};	// Spotlight 2 world postion
 
-float spotLightDir[4] = {0.0f, 0.0f, 0.0f, 1.0f};	// Spotlight pointing diretion 
-float spotLightDir2[4] = {-10.0f, 0.0f, -10.0f, 1.0f};	// Spotlight 2 pointing diretion
+float spotLightDir[4] = {0.0f, -1.0f, 0.0f, 0.0f};	// Spotlight pointing diretion 
+float spotLightDir2[4] = {-3.0f, -2.0f, 1.0f, 0.0f};	// Spotlight 2 pointing diretion
 
-float slAngle = cos(30);	// Spotlight angle
-float slAngle2 = cos(30);	// Spotlight 2 angle 
+float slAngle = 0.9;	// Spotlight angle (0-0.9999)
+float slAngle2 = 0.95;	// Spotlight 2 angle 
 
-float slExp = 20.0;		// Spotlight quality
-float slExp2 = 15.0;	// Spotlight 2 quality
+float slExp = 10.0;		// Spotlight quality
+float slExp2 = 1.0;	// Spotlight 2 quality
 
 int numObj = 0;
 

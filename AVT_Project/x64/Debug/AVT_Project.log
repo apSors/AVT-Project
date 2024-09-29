@@ -1,6 +1,6 @@
 ﻿  lightDemo.cpp
 C:\MEIC\1sem\AVT\Git\AVT-Project\lightDemo.cpp(100,15): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
-C:\MEIC\1sem\AVT\Git\AVT-Project\lightDemo.cpp(101,16): warning C4244: 'initializing': conversion from 'double' to 'float', possible loss of data
+C:\MEIC\1sem\AVT\Git\AVT-Project\lightDemo.cpp(101,16): warning C4305: 'initializing': truncation from 'double' to 'float'
 C:\MEIC\1sem\AVT\Git\AVT-Project\lightDemo.cpp(197,14): warning C4244: 'initializing': conversion from 'GLint' to 'float', possible loss of data
 C:\MEIC\1sem\AVT\Git\AVT-Project\lightDemo.cpp(202,15): warning C4305: 'argument': truncation from 'double' to 'float'
 C:\MEIC\1sem\AVT\Git\AVT-Project\lightDemo.cpp(205,43): warning C4305: 'argument': truncation from 'double' to 'float'

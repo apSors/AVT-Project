@@ -13,6 +13,8 @@ struct Materials {
 
 uniform Materials mat;
 
+uniform vec4 sl_dir;
+uniform vec4 sl_dir2;
 uniform float sl_angle;		// Spotlight angle
 uniform float sl_angle2;	// Spotlight 2 angle
 uniform float sl_exp;		// Spotlight quality 
@@ -24,8 +26,6 @@ in Data {
 	vec3 lightDir;
 	vec3 lightDir2;
 	vec3 lightDir3;
-	vec3 spotLightDir;
-	vec3 spotLightDir2;
 } DataIn;
 
 void main() {
@@ -48,7 +48,8 @@ void main() {
 
 	// Light 2 - Spotlight
 	vec3 l2 = normalize(DataIn.lightDir2);
-	float spotEffect = dot(normalize(DataIn.spotLightDir), -l2);  // Angle between spotlight direction and light direction
+	vec3 sd = normalize(vec3(-sl_dir));
+	float spotEffect = dot(l2, sd);  // Angle between spotlight direction and light direction
 	if (spotEffect > sl_angle) {
 		float attenuation = pow(spotEffect, sl_exp);  // Spot attenuation
 		float intensity2 = max(dot(n, l2), 0.0) * attenuation;
@@ -62,7 +63,8 @@ void main() {
 
 	// Light 3 - Spotlight 2
 	vec3 l3 = normalize(DataIn.lightDir3);
-	float spotEffect2 = dot(normalize(DataIn.spotLightDir2), -l3);  // Angle between spotlight direction and light direction
+	vec3 sd2 = normalize(vec3(-sl_dir2));
+	float spotEffect2 = dot(l3, sd2);  // Angle between spotlight direction and light direction
 	if (spotEffect2 > sl_angle2) {
 		float attenuation2 = pow(spotEffect2, sl_exp2);  // Spot attenuation
 		float intensity3 = max(dot(n, l3), 0.0) * attenuation2;
