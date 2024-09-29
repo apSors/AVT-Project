@@ -123,26 +123,49 @@ void timer(int value)
 	FrameCount = 0;
 
 	// Boat movement logic
-	//for (int i = 0; i < 2; i++) {  // Update x and y only
 	boat.pos[0] += ((boat.speed * deltaT) + (1/2 * boat.acceleration * pow(deltaT,2))) * cos(boat.direction * 3.14 / 180);
-	boat.pos[1] += boat.speed * sin(boat.direction * 3.14 / 180) * deltaT;
-	//}
+	boat.pos[1] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * sin(boat.direction * 3.14 / 180);
+	//boat.pos[1] += boat.speed * sin(boat.direction * 3.14 / 180) * deltaT;
 
-	//handle boat speed decay, both forwards and backwards
-	if (boat.speed > 0) {
-		boat.speed -= decayy;
-		if (boat.speed < 0) boat.speed = 0;
-	}
-	else if (boat.speed < 0)
+	//boat acceleration reduction
+	//boat moving forwards (press 'a' or 'd')
+	if ((boat.acceleration > 0) && (boat.speed >= 0))
 	{
-		boat.speed += decayy;
-		if (boat.speed > 0) boat.speed = 0;
+		boat.acceleration -= decayy;
+		boat.speed += boat.acceleration * deltaT;
+	}
+	else if ((boat.acceleration <= 0) && (boat.speed > 0))
+	{
+		boat.acceleration -= 2*decayy;
+		boat.speed += boat.acceleration * deltaT;
+		if (boat.speed <= 0)
+		{
+			boat.acceleration = 0;
+			boat.speed = 0;
+		}
+	}
+
+	//boat moving backwards (press 's')
+	if ((boat.acceleration < 0) && (boat.speed <= 0))
+	{
+		boat.acceleration += decayy;
+		boat.speed += boat.acceleration * deltaT;
+	}
+	else if ((boat.acceleration >= 0) && (boat.speed < 0))
+	{
+		boat.acceleration += 2*decayy;
+		boat.speed += boat.acceleration * deltaT;
+		if (boat.speed >= 0)
+		{
+			boat.acceleration = 0;
+			boat.speed = 0;
+		}
 	}
 
 	//handle boat angle incremental increase, to make the rotation animation
 	if ((boat.angle - boat.direction) > 0)
 	{
-		boat.direction += decayy * (6 - (3.0f * speedSwitch));
+		boat.direction += decayy * (4 - (3.0f * speedSwitch));
 		if ((boat.direction > boat.angle) && (boat.speed == 0) || (boat.speed == 0))
 		{
 			boat.angle = boat.direction;
@@ -150,7 +173,7 @@ void timer(int value)
 	}
 	else if ((boat.angle - boat.direction) < 0)
 	{
-		boat.direction -= decayy * (6 - (3.0f * speedSwitch));
+		boat.direction -= decayy * (4 - (3.0f * speedSwitch));
 		if ((boat.direction < boat.angle) && (boat.speed == 0) || (boat.speed == 0))
 		{
 			boat.angle = boat.direction;
@@ -160,16 +183,16 @@ void timer(int value)
 	{
 		if (boat.direction > boat.angle)
 		{
-			boat.direction -= decayy * (6 - (3.0f * speedSwitch));
+			boat.direction -= decayy * (4 - (3.0f * speedSwitch));
 		}
 		else if (boat.direction < boat.angle)
 		{
-			boat.direction += decayy * (6 - (3.0f * speedSwitch));
+			boat.direction += decayy * (4 - (3.0f * speedSwitch));
 		}
 	}
 
 
-	glutTimerFunc(10 / deltaT, timer, 0);
+	glutTimerFunc(1 / deltaT, timer, 0);
 }
 
 void refresh(int value)
@@ -428,7 +451,7 @@ void processKeys(unsigned char key, int xx, int yy)
 			boat.angle += 360;
 			boat.direction += 360;
 		}
-		boat.acceleration = 5.0f + (5.0f * speedSwitch);  // Set the speed
+		boat.acceleration = 5.0f + (1.0f * speedSwitch);  // Set the speed
 		break;
 	case 'd':  // Move Right
 		boat.angle += 30.0f;  // Positive direction for right
@@ -437,10 +460,10 @@ void processKeys(unsigned char key, int xx, int yy)
 			boat.angle -= 360;
 			boat.direction -= 360;
 		}
-		boat.acceleration = 5.0f + (5.0f * speedSwitch);  // Set the speed
+		boat.acceleration = 5.0f + (1.0f * speedSwitch);  // Set the speed
 		break;
 	case 's':
-		boat.acceleration = -5.0f - (5.0f * speedSwitch);
+		boat.acceleration = -5.0f - (1.0f * speedSwitch);
 		boat.angle = boat.direction;
 		break;
 	case 'o':
