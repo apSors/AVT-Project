@@ -8,7 +8,7 @@
 // The code comes with no warranties, use it at your own risk.
 // You may use it, or parts of it, wherever you want.
 // 
-// Author: Jo„o Madeiras Pereira
+// Author: Jo√£o Madeiras Pereira
 //
 
 #include <math.h>
@@ -112,6 +112,7 @@ Boat boat;
 
 float deltaT = 0.05f;
 float decayy = 0.1f;
+int numObj = 0;
 
 void timer(int value)
 {
@@ -277,14 +278,12 @@ void renderScene(void) {
 
 	glUseProgram(shader.getProgramIndex());
 
-	//send the light position in eye coordinates
-	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
-
-	float res[4];
+  float res[4];
 	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
 	glUniform4fv(lPos_uniformId, 1, res);
 
 	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
+
 
 	for (int i = 0; i < numObj; ++i) {
 
@@ -308,6 +307,9 @@ void renderScene(void) {
 			translate(MODEL, boat.pos[0] - 0.0f, boat.pos[2], boat.pos[1] - 0.0f);
 			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
 		}
+		if (i == 0) { 
+			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f); 
+		} 
 		//base of 1st house 
 		else if (i == 2) {
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
@@ -315,6 +317,7 @@ void renderScene(void) {
 		}
 		//roof of 1st house
 		else if (i == 3) {
+
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, 5.0f, 1.0f, 5.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
@@ -366,7 +369,6 @@ void renderScene(void) {
 			translate(MODEL, 4.0f, 0.0f, -7.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
-		
 
 		// send matrices to OGL
 		computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -384,6 +386,7 @@ void renderScene(void) {
 		popMatrix(MODEL);
 		objId++;
 	}
+	
 
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
@@ -667,8 +670,6 @@ void init()
 	myMeshes.push_back(amesh);
 	numObj++;
 
-
-
 	//value for the boat
 	diff[0] = 0.8f;
 	diff[1] = 0.6f;
@@ -793,7 +794,6 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	numObj++;
-
 	//shark 2
 	amesh = createCone(1, 1, 3);
 	memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
@@ -804,8 +804,6 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	numObj++;
-
-
 
 	/*// create geometry and VAO of the pawn
 	amesh = createPawn();
