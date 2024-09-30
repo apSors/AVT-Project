@@ -435,3 +435,17 @@ FodyWeavers.xsd
 # Additional files built by Visual Studio
 
 # End of https://www.toptal.com/developers/gitignore/api/visualstudio,c++
+AVT_Project/x64/Debug/vsShaderLib.obj
+AVT_Project/x64/Debug/vc143.pdb
+AVT_Project/x64/Debug/vc143.idb
+AVT_Project/x64/Debug/lightDemo.obj
+AVT_Project/x64/Debug/AVT_Project.tlog/CL.write.1.tlog
+AVT_Project/x64/Debug/AVT_Project.tlog/CL.read.1.tlog
+AVT_Project/x64/Debug/AVT_Project.tlog/CL.command.1.tlog
+AVT_Project/x64/Debug/AVT_Project.log
+AVT_Project/x64/Debug/AVT_Project.ilk
+AVT_Project.vcxproj.filters
+Dependencies/
+Dependencies.exe
+fonts/
+freetype/
