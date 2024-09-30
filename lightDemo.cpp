@@ -82,9 +82,19 @@ long myTime, timebase = 0, frame = 0;
 char s[32];
 float lightPos[4] = { 4.0f, 6.0f, 2.0f, 1.0f };
 
+//number of objects to be drawn
 int numObj = 0;
 
 int activeCam = 0;
+
+//variable used to switch speeds using 'o'
+int speedSwitch = 0;
+
+const float radius = 5.0f;       // Distance from the center of the scene
+const float maxDistance = 15.0f; // Max distance from the center before "death"
+const float speedMultiplier = 0.02f;
+const float shakeAmplitude = 0.05f;
+const float shakeFrequency = 5.0f;
 
 class Camera {
 public:
@@ -98,14 +108,35 @@ Camera cams[3];
 class Boat {
 public:
 	float speed = 0.0f;
-	float angle = 0.0f;
+	float acceleration = 0.0f;
 	float pos[3] = { 0.0f, 0.0f, 0.0f };
+	float angle = 0.0f;
+	float direction = 0.0f;
 };
 
 Boat boat;
 
-float deltaT = 0.5f;
+float deltaT = 0.05f;
 float decayy = 0.1f;
+
+
+// Structure to store data for each shark fin (cone)
+struct SharkFin {
+	float speed = 0.0f;
+	float pos[3] = { 0.0f, 0.0f, 0.0f };
+	float angle = 0.0f;
+	float direction = 0.0f;
+};
+
+// Shark fins
+SharkFin fin_1;
+SharkFin fin_2;
+
+
+// Function to generate a random float value between min and max
+float randomFloat(float min, float max) {
+	return min + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (max - min));
+}
 
 void timer(int value)
 {
@@ -117,14 +148,93 @@ void timer(int value)
 	FrameCount = 0;
 
 	// Boat movement logic
-	for (int i = 0; i < 2; i++) {  // Update x and y only
-		boat.pos[i] += (boat.speed * cos(boat.angle * 3.14/180) * deltaT)/10;  
-		boat.pos[i + 1] += (boat.speed * sin(boat.angle * 3.14 / 180) * deltaT)/10;
+	boat.pos[0] += ((boat.speed * deltaT) + (1/2 * boat.acceleration * pow(deltaT,2))) * cos(boat.direction * 3.14 / 180);
+	boat.pos[1] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * sin(boat.direction * 3.14 / 180);
+	//boat.pos[1] += boat.speed * sin(boat.direction * 3.14 / 180) * deltaT;
+
+	// Define the radii for the paths (circular or elliptical)
+	float radius_1 = 5.0f;  // Radius for fin 1's path
+	float radius_2 = 7.0f;  // Radius for fin 2's path
+
+	// Update the angle based on speed and deltaT
+	fin_1.angle += fin_1.speed * deltaT;
+	fin_2.angle += fin_2.speed * deltaT;
+
+	// Keep the angle between 0 and 360 degrees
+	if (fin_1.angle > 360.0f) fin_1.angle -= 360.0f;
+	if (fin_2.angle > 360.0f) fin_2.angle -= 360.0f;
+
+	//fins movement logic
+	fin_1.pos[0] = radius_1 * cos(fin_1.angle * 3.14f / 180.0f);  // X position
+	fin_1.pos[1] = radius_1 * sin(fin_1.angle * 3.14f / 180.0f);  // Y position
+
+
+	fin_2.pos[0] = radius_2 * cos(fin_2.angle * 3.14f / 180.0f);  // X position
+	fin_2.pos[1] = (radius_2 / 2.0f) * sin(fin_2.angle * 3.14f / 180.0f);  // Y position
+
+
+	//boat acceleration reduction
+	//boat moving forwards (press 'a' or 'd')
+	if ((boat.acceleration > 0) && (boat.speed >= 0))
+	{
+		boat.acceleration -= decayy;
+		boat.speed += boat.acceleration * deltaT;
+	}
+	else if ((boat.acceleration <= 0) && (boat.speed > 0))
+	{
+		boat.acceleration -= 2*decayy;
+		boat.speed += boat.acceleration * deltaT;
+		if (boat.speed <= 0)
+		{
+			boat.acceleration = 0;
+			boat.speed = 0;
+		}
 	}
 
-	if (boat.speed > 0) {
-		boat.speed -= decayy;
-		if (boat.speed < 0) boat.speed = 0;
+	//boat moving backwards (press 's')
+	if ((boat.acceleration < 0) && (boat.speed <= 0))
+	{
+		boat.acceleration += decayy;
+		boat.speed += boat.acceleration * deltaT;
+	}
+	else if ((boat.acceleration >= 0) && (boat.speed < 0))
+	{
+		boat.acceleration += 2*decayy;
+		boat.speed += boat.acceleration * deltaT;
+		if (boat.speed >= 0)
+		{
+			boat.acceleration = 0;
+			boat.speed = 0;
+		}
+	}
+
+	//handle boat angle incremental increase, to make the rotation animation
+	if ((boat.angle - boat.direction) > 0)
+	{
+		boat.direction += decayy * (4 - (3.0f * speedSwitch));
+		if ((boat.direction > boat.angle) && (boat.speed == 0) || (boat.speed == 0))
+		{
+			boat.angle = boat.direction;
+		}
+	}
+	else if ((boat.angle - boat.direction) < 0)
+	{
+		boat.direction -= decayy * (4 - (3.0f * speedSwitch));
+		if ((boat.direction < boat.angle) && (boat.speed == 0) || (boat.speed == 0))
+		{
+			boat.angle = boat.direction;
+		}
+	}
+	else if (boat.angle == 0)
+	{
+		if (boat.direction > boat.angle)
+		{
+			boat.direction -= decayy * (4 - (3.0f * speedSwitch));
+		}
+		else if (boat.direction < boat.angle)
+		{
+			boat.direction += decayy * (4 - (3.0f * speedSwitch));
+		}
 	}
 
 	glutTimerFunc(1 / deltaT, timer, 0);
@@ -170,9 +280,9 @@ void renderScene(void) {
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
 
-	cams[0].pos[0] = camX + boat.pos[1];
-	cams[0].pos[1] = camY + boat.pos[3];
-	cams[0].pos[2] = camZ + boat.pos[2];
+	cams[0].pos[0] = camX + boat.pos[0];
+	cams[0].pos[1] = camY + boat.pos[2];
+	cams[0].pos[2] = camZ + boat.pos[1];
 
 	cams[1].type = 1;
 	cams[1].pos[1] = 20;
@@ -182,13 +292,13 @@ void renderScene(void) {
 	// Follow Cam
 	if (activeCam == 0) {
 		// set the camera using a function similar to gluLookAt
-		lookAt(cams[0].pos[0], cams[0].pos[1], cams[0].pos[2], boat.pos[1], boat.pos[3], boat.pos[2], 0, 1, 0);
+		lookAt(cams[0].pos[0], cams[0].pos[1], cams[0].pos[2], boat.pos[0], boat.pos[2], boat.pos[1], 0, 1, 0);
 	}
 	// Static Ortho Cam
 	else if (activeCam == 1) {
 		lookAt(cams[1].pos[0], cams[1].pos[1], cams[1].pos[2], 0, 0, 0, 0, 0, 1);
 	}
-	// Static Perspective Cam
+	// Static Perspective 
 	else if (activeCam == 2) {
 		lookAt(cams[2].pos[0], cams[2].pos[1], cams[2].pos[2], 0, 0, 0, 0, 0, 1);
 	}
@@ -237,9 +347,11 @@ void renderScene(void) {
 		if (i == 0) {
 			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
 		}
+		// boat
 		if (i == 1)
 		{
-			translate(MODEL, boat.pos[1] - 0.5f, boat.pos[3], boat.pos[2] - 0.5f);
+			translate(MODEL, boat.pos[0] - 0.0f, boat.pos[2], boat.pos[1] - 0.0f);
+			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
 		}
 		//base of 1st house 
 		else if (i == 2) {
@@ -289,18 +401,27 @@ void renderScene(void) {
 			translate(MODEL, 1.4f, 1.2f, 0.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
-		//shark 1
+		//shark fin 1
 		else if (i == 11) {
-			translate(MODEL, 5.0f, 0.0f, 5.0f);
-			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+			translate(MODEL, fin_1.pos[0] - 2.0f, fin_1.pos[2], fin_1.pos[1] - 1.0f); // Adjust for fin's position
+			rotate(MODEL, -fin_1.angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
+
+			//translate(MODEL, 5.0f, 0.0f, 5.0f);
+			//rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
-		
-		//shark 2
+		//shark fin 2
 		else if (i == 12) {
-			translate(MODEL, 4.0f, 0.0f, -7.0f);
-			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
-		}
+			translate(MODEL, fin_2.pos[0] - 4.0f, fin_2.pos[2], fin_2.pos[1] - 0.0f); // Adjust for fin's position
+			rotate(MODEL, -fin_2.angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
 		
+
+			//translate(MODEL, 4.0f, 0.0f, -7.0f);
+			//rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+		}
+
+		// Initial settings for fins' speed and direction:
+		fin_1.speed = 30.0f;  // Degrees per second
+		fin_2.speed = 25.0f;  // Degrees per second
 
 		// send matrices to OGL
 		computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -379,17 +500,36 @@ void processKeys(unsigned char key, int xx, int yy)
 		activeCam = 2;
 		break;
 	case 'a': // Move Left
-		boat.angle -= 45.0f;  // Negative direction for left
-		boat.speed = 5.0f;  // Set the speed
-		rotate(MODEL, -20.0f, 0.0f, 0.0f, 1.0f);
+		boat.angle -= 30.0f;  // Negative direction for left
+		if ((boat.angle / 360) < -1.0f)
+		{
+			boat.angle += 360;
+			boat.direction += 360;
+		}
+		boat.acceleration = 5.0f + (1.0f * speedSwitch);  // Set the speed
 		break;
 	case 'd':  // Move Right
-		boat.angle += 45.0f;  // Positive direction for right
-		boat.speed = 5.0f;  // Set the speed
+		boat.angle += 30.0f;  // Positive direction for right
+		if ((boat.angle / 360) > 1.0f)
+		{
+			boat.angle -= 360;
+			boat.direction -= 360;
+		}
+		boat.acceleration = 5.0f + (1.0f * speedSwitch);  // Set the speed
 		break;
 	case 's':
-		boat.speed = -5.0f;
+		boat.acceleration = -5.0f - (1.0f * speedSwitch);
+		boat.angle = boat.direction;
 		break;
+	case 'o':
+		//increase speedSwitch for speed change logic
+		speedSwitch++;
+		//if speedswitch is 2 or more, return to 0
+		if (speedSwitch >= 2)
+		{
+			speedSwitch = 0;
+		}
+	
 	}
 }
 
@@ -582,8 +722,6 @@ void init()
 	myMeshes.push_back(amesh);
 	numObj++;
 
-
-
 	//value for the boat
 	diff[0] = 0.8f;
 	diff[1] = 0.6f;
@@ -698,7 +836,7 @@ void init()
 	myMeshes.push_back(amesh);
 	numObj++;
 
-	//shark 1
+	//shark fin 1
 	amesh = createCone(1, 1, 3);
 	memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
@@ -709,7 +847,7 @@ void init()
 	myMeshes.push_back(amesh);
 	numObj++;
 
-	//shark 2
+	//shark fin 2
 	amesh = createCone(1, 1, 3);
 	memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
