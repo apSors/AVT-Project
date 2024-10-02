@@ -104,12 +104,19 @@ float slAngle2 = 0.95;	// Spotlight 2 angle
 float slExp = 10.0;		// Spotlight quality
 float slExp2 = 1.0;	// Spotlight 2 quality
 
+//number of objects to be drawn
 int numObj = 0;
 
 int activeCam = 0;
 
 //variable used to switch speeds using 'o'
 int speedSwitch = 0;
+
+const float radius = 5.0f;       // Distance from the center of the scene
+const float maxDistance = 15.0f; // Max distance from the center before "death"
+const float speedMultiplier = 0.02f;
+const float shakeAmplitude = 0.05f;
+const float shakeFrequency = 5.0f;
 
 class Camera {
 public:
@@ -134,6 +141,25 @@ Boat boat;
 float deltaT = 0.05f;
 float decayy = 0.1f;
 
+
+// Structure to store data for each shark fin (cone)
+struct SharkFin {
+	float speed = 0.0f;
+	float pos[3] = { 1000.0f, 1000.0f, 0.0f };
+	float angle = 0.0f;
+	float direction = 0.0f;
+	float slope = 0.0f;
+	float initialPos[3] = { 0.0f, 0.0f, 0.0f};
+};
+// Shark fins
+const int sharkfinNumber = 4;
+SharkFin fins[sharkfinNumber];
+
+// Function to generate a random float value between min and max
+float randomFloat(float min, float max) {
+	return min + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (max - min));
+}
+
 void timer(int value)
 {
 	std::ostringstream oss;
@@ -142,26 +168,54 @@ void timer(int value)
 	glutSetWindow(WindowHandle);
 	glutSetWindowTitle(s.c_str());
 	FrameCount = 0;
+	int i = 0;
 
 	// Boat movement logic
 	boat.pos[0] += ((boat.speed * deltaT) + (1/2 * boat.acceleration * pow(deltaT,2))) * cos(boat.direction * 3.14 / 180);
 	boat.pos[1] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * sin(boat.direction * 3.14 / 180);
 	//boat.pos[1] += boat.speed * sin(boat.direction * 3.14 / 180) * deltaT;
 
+	// Define the radii for the paths (circular or elliptical)
+	float radius_1 = 5.0f;  // Radius for fin 1's path
+	float radius_2 = 7.0f;  // Radius for fin 2's path
+
+	for (i = 0; i < sharkfinNumber; i++)
+	{
+		
+
+		if ((abs(fins[i].pos[0] - fins[i].initialPos[0]) > 5.0f) || ((abs(fins[i].pos[1] - fins[i].initialPos[1])) > 5.0f))
+		{
+			fins[i].initialPos[0] = (float)(5.0 * cos(rand())) + boat.pos[0];
+			fins[i].initialPos[1] = (float)(5.0 * sin(rand())) + boat.pos[1];
+			fins[i].slope = ((fins[i].initialPos[1] - boat.pos[1]) / (fins[i].initialPos[0] - boat.pos[0]));
+			fins[i].angle = atan(fins[i].slope);
+			fins[i].pos[0] = fins[i].initialPos[0];
+			fins[i].pos[1] = fins[i].initialPos[1];
+
+		}
+
+		
+		// Keep the angle between 0 and 360 degrees
+		if (fins[i].angle > 3.14) { fins[i].angle -= 3.14f; }
+		else if (fins[i].angle < -3.14f) { fins[i].angle += 3.14f; }
+
+		//fins movement logic
+		// we want them to move in a straight line, starting at their spawn point moving towards the boat position
+		fins[i].pos[0] += (fins[i].slope * deltaT) * cos(fins[i].angle);  // X position
+		fins[i].pos[1] += (fins[i].slope * deltaT) * sin(fins[i].angle);  // Y position
+
+	}
+
 	//boat acceleration reduction
 	//boat moving forwards (press 'a' or 'd')
-	if (boat.speed > (5.0f + 1*speedSwitch)) //stops the boat from going too fast if you keep adding acceleration, taking into account the speed change option
+	if ((boat.acceleration > 0) && (boat.speed >= 0))
 	{
-		boat.speed = 5.0f + 1 * speedSwitch;
-	}
-	if ((boat.acceleration > 0) && (boat.speed >= 0)) //when the boat starts accelerating
-	{
-		boat.acceleration -= 7*decayy;
+		boat.acceleration -= decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
-	else if ((boat.acceleration <= 0) && (boat.speed > 0)) // when the boat starts decelerating
+	else if ((boat.acceleration <= 0) && (boat.speed > 0))
 	{
-		boat.acceleration -= 6*decayy;
+		boat.acceleration -= 2*decayy;
 		boat.speed += boat.acceleration * deltaT;
 		if (boat.speed <= 0)
 		{
@@ -171,9 +225,49 @@ void timer(int value)
 	}
 
 	//boat moving backwards (press 's')
-	if (boat.speed < (- 5.0f - 1*speedSwitch)) //stops the boat from going too fast if you keep adding acceleration, taking into account the speed change option
+	if ((boat.acceleration < 0) && (boat.speed <= 0))
 	{
-		boat.speed = -5.0f - 1 * speedSwitch;
+		boat.acceleration += decayy;
+		boat.speed += boat.acceleration * deltaT;
+	}
+	else if ((boat.acceleration >= 0) && (boat.speed < 0))
+	{
+		boat.acceleration += 2*decayy;
+		boat.speed += boat.acceleration * deltaT;
+		if (boat.speed >= 0)
+		{
+			boat.acceleration = 0;
+			boat.speed = 0;
+		}
+	}
+
+	//handle boat angle incremental increase, to make the rotation animation
+	if ((boat.angle - boat.direction) > 0)
+	{
+		boat.direction += decayy * (4 - (3.0f * speedSwitch));
+		if ((boat.direction > boat.angle) && (boat.speed == 0) || (boat.speed == 0))
+		{
+			boat.angle = boat.direction;
+		}
+	}
+	else if ((boat.angle - boat.direction) < 0)
+	{
+		boat.direction -= decayy * (4 - (3.0f * speedSwitch));
+		if ((boat.direction < boat.angle) && (boat.speed == 0) || (boat.speed == 0))
+		{
+			boat.angle = boat.direction;
+		}
+	}
+	else if (boat.angle == 0)
+	{
+		if (boat.direction > boat.angle)
+		{
+			boat.direction -= decayy * (4 - (3.0f * speedSwitch));
+		}
+		else if (boat.direction < boat.angle)
+		{
+			boat.direction += decayy * (4 - (3.0f * speedSwitch));
+		}
 	}
 	if ((boat.acceleration < 0) && (boat.speed <= 0)) //when the boat starts accelerating backwards
 	{
@@ -412,16 +506,62 @@ void renderScene(void) {
 			translate(MODEL, 1.4f, 1.2f, 0.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
-		//shark 1
+		//shark fin 1
 		else if (i == 11) {
-			translate(MODEL, 5.0f, 0.0f, 5.0f);
-			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+			translate(MODEL, fins[0].pos[0] - 2.0f, fins[0].pos[2], fins[0].pos[1] - 1.0f); // Adjust for fin's position
+			rotate(MODEL, -fins[0].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
+
+			//translate(MODEL, 5.0f, 0.0f, 5.0f);
+			//rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
-		//shark 2
+		//shark fin 2
 		else if (i == 12) {
-			translate(MODEL, 4.0f, 0.0f, -7.0f);
-			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+			translate(MODEL, fins[1].pos[0] - 4.0f, fins[1].pos[2], fins[1].pos[1] - 0.0f); // Adjust for fin's position
+			rotate(MODEL, -fins[1].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
+		
+
+			//translate(MODEL, 4.0f, 0.0f, -7.0f);
+			//rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
+
+		// Initial settings for fins' speed and direction:
+		for (int j = 0; j < sharkfinNumber; j++)
+		{
+			fins[j].speed = 30.0f;  // Degrees per second
+		}
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(myMeshes[objId].vao);
+
+		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		objId++;
+	}
+
+	for (int i = 0; i < sharkfinNumber; i++)
+	{
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[objId].mat.shininess);
+		pushMatrix(MODEL);
+
+		translate(MODEL, fins[i].pos[0], fins[i].pos[2], fins[i].pos[1]); // Adjust for fin's position
+		//rotate(MODEL, -fins[i].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
 
 		// send matrices to OGL
 		computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -499,25 +639,25 @@ void processKeys(unsigned char key, int xx, int yy)
 		activeCam = 2;
 		break;
 	case 'a': // Move Left
-		boat.angle = boat.direction - 30.0f;  // Negative direction for left
+		boat.angle -= 30.0f;  // Negative direction for left
 		if ((boat.angle / 360) < -1.0f)
 		{
 			boat.angle += 360;
 			boat.direction += 360;
 		}
-		boat.acceleration = 10.0f + (1.0f * speedSwitch);  // Set the speed
+		boat.acceleration = 5.0f + (1.0f * speedSwitch);  // Set the speed
 		break;
 	case 'd':  // Move Right
-		boat.angle = boat.direction + 30.0f;  // Positive direction for right
+		boat.angle += 30.0f;  // Positive direction for right
 		if ((boat.angle / 360) > 1.0f)
 		{
 			boat.angle -= 360;
 			boat.direction -= 360;
 		}
-		boat.acceleration = 10.0f + (2.0f * speedSwitch);  // Set the speed
+		boat.acceleration = 5.0f + (1.0f * speedSwitch);  // Set the speed
 		break;
 	case 's':
-		boat.acceleration = -10.0f - (2.0f * speedSwitch);
+		boat.acceleration = -5.0f - (1.0f * speedSwitch);
 		boat.angle = boat.direction;
 		break;
 	case 'o':
@@ -847,26 +987,18 @@ void init()
 	myMeshes.push_back(amesh);
 	numObj++;
 
-	//shark 1
-	amesh = createCone(1, 1, 3);
-	memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 10 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 10 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	//shark 2
-	amesh = createCone(1, 1, 3);
-	memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 10 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 10 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
+	//shark fins
+	for (int i = 0; i < sharkfinNumber; i++)
+	{
+		amesh = createCone(1, 0.5f, 3);
+		memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
+		memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
+		memcpy(amesh.mat.specular, spec, 10 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 10 * sizeof(float));
+		amesh.mat.shininess = shininess;
+		amesh.mat.texCount = texcount;
+		myMeshes.push_back(amesh);
+	}
 
 	/*// create geometry and VAO of the pawn
 	amesh = createPawn();
