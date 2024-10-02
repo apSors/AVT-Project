@@ -8,7 +8,7 @@
 // The code comes with no warranties, use it at your own risk.
 // You may use it, or parts of it, wherever you want.
 // 
-// Author: Jo„o Madeiras Pereira
+// Author: Jo√£o Madeiras Pereira
 //
 
 #include <math.h>
@@ -76,7 +76,7 @@ GLint slExp_uniformId;		// Spotlight exponent
 GLint slExp_uniformId2;		// Spotlight 2 exponent
 
 GLint tex_loc, tex_loc1, tex_loc2;
-	
+
 // Camera Position
 float camX, camY, camZ;
 
@@ -88,7 +88,7 @@ float alpha = 39.0f, beta = 51.0f;
 float r = 10.0f;
 
 // Frame counting and FPS computation
-long myTime,timebase = 0,frame = 0;
+long myTime, timebase = 0, frame = 0;
 char s[32];
 float lightPos[4] = {10.0f, 6.0f, 10.0f, 1.0f};			// Point light world position
 
@@ -108,6 +108,9 @@ int numObj = 0;
 
 int activeCam = 0;
 
+//variable used to switch speeds using 'o'
+int speedSwitch = 0;
+
 class Camera {
 public:
 	float pos[3] = { 0, 0, 0 };
@@ -117,6 +120,20 @@ public:
 
 Camera cams[3];
 
+class Boat {
+public:
+	float speed = 0.0f;
+	float acceleration = 0.0f;
+	float pos[3] = { 0.0f, 0.0f, 0.0f };
+	float angle = 0.0f;
+	float direction = 0.0f;
+};
+
+Boat boat;
+
+float deltaT = 0.05f;
+float decayy = 0.1f;
+
 void timer(int value)
 {
 	std::ostringstream oss;
@@ -124,8 +141,91 @@ void timer(int value)
 	std::string s = oss.str();
 	glutSetWindow(WindowHandle);
 	glutSetWindowTitle(s.c_str());
-    FrameCount = 0;
-    glutTimerFunc(1000, timer, 0);
+	FrameCount = 0;
+
+	// Boat movement logic
+	boat.pos[0] += ((boat.speed * deltaT) + (1/2 * boat.acceleration * pow(deltaT,2))) * cos(boat.direction * 3.14 / 180);
+	boat.pos[1] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * sin(boat.direction * 3.14 / 180);
+	//boat.pos[1] += boat.speed * sin(boat.direction * 3.14 / 180) * deltaT;
+
+	//boat acceleration reduction
+	//boat moving forwards (press 'a' or 'd')
+	if (boat.speed > (5.0f + 1*speedSwitch)) //stops the boat from going too fast if you keep adding acceleration, taking into account the speed change option
+	{
+		boat.speed = 5.0f + 1 * speedSwitch;
+	}
+	if ((boat.acceleration > 0) && (boat.speed >= 0)) //when the boat starts accelerating
+	{
+		boat.acceleration -= 7*decayy;
+		boat.speed += boat.acceleration * deltaT;
+	}
+	else if ((boat.acceleration <= 0) && (boat.speed > 0)) // when the boat starts decelerating
+	{
+		boat.acceleration -= 6*decayy;
+		boat.speed += boat.acceleration * deltaT;
+		if (boat.speed <= 0)
+		{
+			boat.acceleration = 0;
+			boat.speed = 0;
+		}
+	}
+
+	//boat moving backwards (press 's')
+	if (boat.speed < (- 5.0f - 1*speedSwitch)) //stops the boat from going too fast if you keep adding acceleration, taking into account the speed change option
+	{
+		boat.speed = -5.0f - 1 * speedSwitch;
+	}
+	if ((boat.acceleration < 0) && (boat.speed <= 0)) //when the boat starts accelerating backwards
+	{
+		boat.acceleration += 7*decayy;
+		boat.speed += boat.acceleration * deltaT;
+	}
+	else if ((boat.acceleration >= 0) && (boat.speed < 0)) // when the boat starts decelerating
+	{
+		boat.acceleration += 6*decayy;
+		boat.speed += boat.acceleration * deltaT;
+		if (boat.speed >= 0)
+		{
+			boat.acceleration = 0;
+			boat.speed = 0;
+		}
+	}
+
+	//handle boat angle incremental increase, to make the rotation animation
+	if (abs(boat.direction - boat.angle) < 0.1) //this helps deal with differences that arent divisble by decayy, example is boat.angle = 65.99043 boat.direction = 65.99057
+	{
+		boat.angle = boat.direction;
+	}
+	if ((boat.angle - boat.direction) > 0) //dealing with angle differences from sides 'a' and 'd'
+	{
+		boat.direction += decayy * (6 - (1.0f * speedSwitch));
+		if (boat.speed == 0) //when the boat stops going forward we want to make sure it stops rotating
+		{
+			boat.angle = boat.direction;
+		}
+	}
+	else if ((boat.angle - boat.direction) < 0)
+	{
+		boat.direction -= decayy * (6 - (1.0f * speedSwitch));
+		if ((boat.direction < boat.angle) && (boat.speed == 0) || (boat.speed == 0))
+		{
+			boat.angle = boat.direction;
+		}
+	}
+	else if (boat.angle == 0)
+	{
+		if (boat.direction > boat.angle)
+		{
+			boat.direction -= decayy * (6 - (1.0f * speedSwitch));
+		}
+		else if (boat.direction < boat.angle)
+		{
+			boat.direction += decayy * (6 - (1.0f * speedSwitch));
+		}
+	}
+
+
+	glutTimerFunc(1 / deltaT, timer, 0);
 }
 
 void refresh(int value)
@@ -142,7 +242,7 @@ void changeSize(int w, int h) {
 
 	float ratio;
 	// Prevent a divide by zero, when window is too short
-	if(h == 0)
+	if (h == 0)
 		h = 1;
 	// set the viewport to be the entire window
 	glViewport(0, 0, w, h);
@@ -168,9 +268,9 @@ void renderScene(void) {
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
 
-	cams[0].pos[0] = camX;
-	cams[0].pos[1] = camY;
-	cams[0].pos[2] = camZ;
+	cams[0].pos[0] = camX + boat.pos[0];
+	cams[0].pos[1] = camY + boat.pos[2];
+	cams[0].pos[2] = camZ + boat.pos[1];
 
 	cams[1].type = 1;
 	cams[1].pos[1] = 20;
@@ -180,13 +280,13 @@ void renderScene(void) {
 	// Follow Cam
 	if (activeCam == 0) {
 		// set the camera using a function similar to gluLookAt
-		lookAt(cams[0].pos[0], cams[0].pos[1], cams[0].pos[2], 0, 0, 0, 0, 1, 0);
+		lookAt(cams[0].pos[0], cams[0].pos[1], cams[0].pos[2], boat.pos[0], boat.pos[2], boat.pos[1], 0, 1, 0);
 	}
 	// Static Ortho Cam
 	else if (activeCam == 1) {
 		lookAt(cams[1].pos[0], cams[1].pos[1], cams[1].pos[2], 0, 0, 0, 0, 0, 1);
 	}
-	// Static Perspective Cam
+	// Static Perspective 
 	else if (activeCam == 2) {
 		lookAt(cams[2].pos[0], cams[2].pos[1], cams[2].pos[2], 0, 0, 0, 0, 0, 1);
 	}
@@ -207,11 +307,12 @@ void renderScene(void) {
 	}
 
 	// use our shader
-	
+
 	glUseProgram(shader.getProgramIndex());
 
-		//send the light position in eye coordinates
-		//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
+  float res[4];
+	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
+	glUniform4fv(lPos_uniformId, 1, res);
 
 		float res[4];		// Point light world position
 		float res2[4];		// Spotlight world position 
@@ -236,7 +337,6 @@ void renderScene(void) {
 		glUniform1f(slExp_uniformId, slExp);
 		glUniform1f(slExp_uniformId2, slExp2);
 
-	int objId=0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
 	for (int i = 0; i < numObj; ++i) {
 
@@ -251,6 +351,15 @@ void renderScene(void) {
 		glUniform1f(loc, myMeshes[objId].mat.shininess);
 		pushMatrix(MODEL);
 		// """water"""
+		if (i == 0) {
+			//rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
+		}
+		// boat
+		if (i == 1)
+		{
+			translate(MODEL, boat.pos[0] - 0.0f, boat.pos[2], boat.pos[1] - 0.0f);
+			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
+		}
 		if (i == 0) { 
 			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f); 
 		} 
@@ -260,46 +369,57 @@ void renderScene(void) {
 			translate(MODEL, 4.5f, 0.0f, 4.5);
 		}
 		//roof of 1st house
-		else if (i == 3) {  
+		else if (i == 3) {
+
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, 5.0f, 1.0f, 5.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
 		//base of 2nd house 
-		else if (i == 4) { 
+		else if (i == 4) {
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, 4.5f, 0.0f, -1.5f);
 		}
 		//roof of 2nd house 
-		else if (i == 5) { 
+		else if (i == 5) {
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, 5.0f, 1.0f, -1.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
 		//base of 3rd house 
-		else if (i == 6) { 
+		else if (i == 6) {
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, -4.5f, 0.0f, -1.5f);
 		}
 		//roof of 3rd house 
-		else if (i == 7) { 
+		else if (i == 7) {
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, -4.0f, 1.0f, -1.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
 		//handle of the paddle
-		else if (i == 8) { 
+		else if (i == 8) {
 			translate(MODEL, 0.5f, 1.2f, 0.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//head1 of the paddle
-		else if (i == 9) { 
+		else if (i == 9) {
 			translate(MODEL, -0.4f, 1.2f, 0.0f);
 			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//head2 of the paddle
-		else if (i == 10) { 
+		else if (i == 10) {
 			translate(MODEL, 1.4f, 1.2f, 0.0f);
+			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+		}
+		//shark 1
+		else if (i == 11) {
+			translate(MODEL, 5.0f, 0.0f, 5.0f);
+			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+		}
+		//shark 2
+		else if (i == 12) {
+			translate(MODEL, 4.0f, 0.0f, -7.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 
@@ -312,7 +432,6 @@ void renderScene(void) {
 
 		// Render mesh
 		glBindVertexArray(myMeshes[objId].vao);
-			
 		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
@@ -324,7 +443,7 @@ void renderScene(void) {
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 	glDisable(GL_DEPTH_TEST);
 	//the glyph contains transparent background colors and non-transparent for the actual character pixels. So we use the blending
-	glEnable(GL_BLEND);  
+	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	int m_viewport[4];
 	glGetIntegerv(GL_VIEWPORT, m_viewport);
@@ -355,36 +474,61 @@ void renderScene(void) {
 
 void processKeys(unsigned char key, int xx, int yy)
 {
-	switch(key) {
+	switch (key) {
 
-		case 27:
-			glutLeaveMainLoop();
-			break;
+	case 27:
+		glutLeaveMainLoop();
+		break;
 
-		case 'c': 
-			printf("Camera Spherical Coordinates (%f, %f, %f)\n", alpha, beta, r);
-			break;
-		case 'm': glEnable(GL_MULTISAMPLE); break;
-		case 'n': glDisable(GL_MULTISAMPLE); break;
+	case 'c':
+		printf("Camera Spherical Coordinates (%f, %f, %f)\n", alpha, beta, r);
+		break;
+	case 'm': glEnable(GL_MULTISAMPLE); break;
+	case 'n': glDisable(GL_MULTISAMPLE); break;
 
-			// Follow Cam
-		case '1':
-			activeCam = 0;
-			break;
-			// Static Ortho Cam
-		case '2':
-			activeCam = 1;
-			break;
-			// Static Perpective Cam
-		case '3':
-			activeCam = 2;
-			break;
-			// Turn boat left
-		case 'a':
-			break;
-			// Turn boat right
-		case 'd':
-			break;
+		// Follow Cam
+	case '1':
+		activeCam = 0;
+		break;
+		// Static Ortho Cam
+	case '2':
+		activeCam = 1;
+		break;
+		// Static Perpective Cam
+	case '3':
+		activeCam = 2;
+		break;
+	case 'a': // Move Left
+		boat.angle = boat.direction - 30.0f;  // Negative direction for left
+		if ((boat.angle / 360) < -1.0f)
+		{
+			boat.angle += 360;
+			boat.direction += 360;
+		}
+		boat.acceleration = 10.0f + (1.0f * speedSwitch);  // Set the speed
+		break;
+	case 'd':  // Move Right
+		boat.angle = boat.direction + 30.0f;  // Positive direction for right
+		if ((boat.angle / 360) > 1.0f)
+		{
+			boat.angle -= 360;
+			boat.direction -= 360;
+		}
+		boat.acceleration = 10.0f + (2.0f * speedSwitch);  // Set the speed
+		break;
+	case 's':
+		boat.acceleration = -10.0f - (2.0f * speedSwitch);
+		boat.angle = boat.direction;
+		break;
+	case 'o':
+		//increase speedSwitch for speed change logic
+		speedSwitch++;
+		//if speedswitch is 2 or more, return to 0
+		if (speedSwitch >= 2)
+		{
+			speedSwitch = 0;
+		}
+	
 	}
 }
 
@@ -397,7 +541,7 @@ void processKeys(unsigned char key, int xx, int yy)
 void processMouseButtons(int button, int state, int xx, int yy)
 {
 	// start tracking the mouse
-	if (state == GLUT_DOWN)  {
+	if (state == GLUT_DOWN) {
 		startX = xx;
 		startY = yy;
 		if (button == GLUT_LEFT_BUTTON)
@@ -430,8 +574,8 @@ void processMouseMotion(int xx, int yy)
 	float alphaAux, betaAux;
 	float rAux;
 
-	deltaX =  - xx + startX;
-	deltaY =    yy - startY;
+	deltaX = -xx + startX;
+	deltaY = yy - startY;
 
 	// left mouse button: move camera
 	if (tracking == 1) {
@@ -458,10 +602,11 @@ void processMouseMotion(int xx, int yy)
 
 	camX = rAux * sin(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
 	camZ = rAux * cos(alphaAux * 3.14f / 180.0f) * cos(betaAux * 3.14f / 180.0f);
-	camY = rAux *   						       sin(betaAux * 3.14f / 180.0f);
+	camY = rAux * sin(betaAux * 3.14f / 180.0f);
 
-//  uncomment this if not using an idle or refresh func
-//	glutPostRedisplay();
+
+	//  uncomment this if not using an idle or refresh func
+	//	glutPostRedisplay();
 }
 
 
@@ -473,10 +618,10 @@ void mouseWheel(int wheel, int direction, int x, int y) {
 
 	camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camY = r *   						     sin(beta * 3.14f / 180.0f);
+	camY = r * sin(beta * 3.14f / 180.0f);
 
-//  uncomment this if not using an idle or refresh func
-//	glutPostRedisplay();
+	//  uncomment this if not using an idle or refresh func
+	//	glutPostRedisplay();
 }
 
 // --------------------------------------------------------
@@ -493,7 +638,7 @@ GLuint setupShaders() {
 	shader.loadShader(VSShaderLib::FRAGMENT_SHADER, "shaders/pointlight.frag");
 
 	// set semantics for the shader variables
-	glBindFragDataLocation(shader.getProgramIndex(), 0,"colorOut");
+	glBindFragDataLocation(shader.getProgramIndex(), 0, "colorOut");
 	glBindAttribLocation(shader.getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
 	glBindAttribLocation(shader.getProgramIndex(), NORMAL_ATTRIB, "normal");
 	//glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
@@ -525,7 +670,7 @@ GLuint setupShaders() {
 	tex_loc = glGetUniformLocation(shader.getProgramIndex(), "texmap");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
-	
+
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 
 	// Shader for bitmap Text
@@ -540,7 +685,7 @@ GLuint setupShaders() {
 		printf("GLSL Text Program Not Valid!\n");
 		exit(1);
 	}
-	
+
 	return(shader.isProgramLinked() && shaderText.isProgramLinked());
 }
 
@@ -567,14 +712,14 @@ void init()
 	// set the camera position based on its spherical coordinates
 	camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
-	camY = r *   						     sin(beta * 3.14f / 180.0f);
+	camY = r * sin(beta * 3.14f / 180.0f);
 
 	//values for the """water"""
-	float amb[]= {0.2f, 0.15f, 0.1f, 1.0f};
-	float diff[] = {0.0f, 0.0f, 13.0f, 0.0f};
-	float spec[] = {0.8f, 0.8f, 0.8f, 1.0f};
-	float emissive[] = {0.0f, 0.0f, 0.0f, 1.0f};
-	float shininess= 100.0f;
+	float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
+	float diff[] = { 0.0f, 0.0f, 13.0f, 0.0f };
+	float spec[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+	float emissive[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	float shininess = 100.0f;
 	int texcount = 0;
 
 	//create the water quad
@@ -589,7 +734,7 @@ void init()
 	numObj++;
 
 	//value for the boat
-	diff[0] = 0.8f; 
+	diff[0] = 0.8f;
 	diff[1] = 0.6f;
 	diff[2] = 0.4f;
 	diff[3] = 1.0f;
@@ -702,6 +847,27 @@ void init()
 	myMeshes.push_back(amesh);
 	numObj++;
 
+	//shark 1
+	amesh = createCone(1, 1, 3);
+	memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 10 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 10 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//shark 2
+	amesh = createCone(1, 1, 3);
+	memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 10 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 10 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+
 	/*// create geometry and VAO of the pawn
 	amesh = createPawn();
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
@@ -712,7 +878,7 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 
-	
+
 	// create geometry and VAO of the sphere
 	amesh = createSphere(1.0f, 20);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
@@ -738,7 +904,7 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 
-	// create geometry and VAO of the 
+	// create geometry and VAO of the
 	amesh = createCone(1.5f, 0.5f, 20);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -762,7 +928,7 @@ void init()
 //
 
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
 
 	cams[0].pos[0] = camX;
 	cams[0].pos[1] = camY;
@@ -773,20 +939,20 @@ int main(int argc, char **argv) {
 
 	cams[2].pos[1] = 50;
 
-//  GLUT initialization
+	//  GLUT initialization
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DEPTH|GLUT_DOUBLE|GLUT_RGBA|GLUT_MULTISAMPLE);
+	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
 
-	glutInitContextVersion (4, 3);
-	glutInitContextProfile (GLUT_CORE_PROFILE );
+	glutInitContextVersion(4, 3);
+	glutInitContextProfile(GLUT_CORE_PROFILE);
 	glutInitContextFlags(GLUT_FORWARD_COMPATIBLE | GLUT_DEBUG);
 
-	glutInitWindowPosition(100,100);
+	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(WinX, WinY);
 	WindowHandle = glutCreateWindow(CAPTION);
 
 
-//  Callback Registration
+	//  Callback Registration
 	glutDisplayFunc(renderScene);
 	glutReshapeFunc(changeSize);
 
@@ -798,20 +964,20 @@ int main(int argc, char **argv) {
 	glutKeyboardFunc(processKeys);
 	glutMouseFunc(processMouseButtons);
 	glutMotionFunc(processMouseMotion);
-	glutMouseWheelFunc ( mouseWheel ) ;
-	
+	glutMouseWheelFunc(mouseWheel);
 
-//	return from main loop
+
+	//	return from main loop
 	glutSetOption(GLUT_ACTION_ON_WINDOW_CLOSE, GLUT_ACTION_GLUTMAINLOOP_RETURNS);
 
-//	Init GLEW
+	//	Init GLEW
 	glewExperimental = GL_TRUE;
 	glewInit();
 
-	printf ("Vendor: %s\n", glGetString (GL_VENDOR));
-	printf ("Renderer: %s\n", glGetString (GL_RENDERER));
-	printf ("Version: %s\n", glGetString (GL_VERSION));
-	printf ("GLSL: %s\n", glGetString (GL_SHADING_LANGUAGE_VERSION));
+	printf("Vendor: %s\n", glGetString(GL_VENDOR));
+	printf("Renderer: %s\n", glGetString(GL_RENDERER));
+	printf("Version: %s\n", glGetString(GL_VERSION));
+	printf("GLSL: %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION));
 
 	if (!setupShaders())
 		return(1);
