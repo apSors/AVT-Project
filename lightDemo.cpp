@@ -112,7 +112,6 @@ Boat boat;
 
 float deltaT = 0.05f;
 float decayy = 0.1f;
-int numObj = 0;
 
 void timer(int value)
 {
@@ -130,14 +129,18 @@ void timer(int value)
 
 	//boat acceleration reduction
 	//boat moving forwards (press 'a' or 'd')
-	if ((boat.acceleration > 0) && (boat.speed >= 0))
+	if (boat.speed > (5.0f + 1*speedSwitch)) //stops the boat from going too fast if you keep adding acceleration, taking into account the speed change option
 	{
-		boat.acceleration -= decayy;
+		boat.speed = 5.0f + 1 * speedSwitch;
+	}
+	if ((boat.acceleration > 0) && (boat.speed >= 0)) //when the boat starts accelerating
+	{
+		boat.acceleration -= 7*decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
-	else if ((boat.acceleration <= 0) && (boat.speed > 0))
+	else if ((boat.acceleration <= 0) && (boat.speed > 0)) // when the boat starts decelerating
 	{
-		boat.acceleration -= 2*decayy;
+		boat.acceleration -= 6*decayy;
 		boat.speed += boat.acceleration * deltaT;
 		if (boat.speed <= 0)
 		{
@@ -147,14 +150,18 @@ void timer(int value)
 	}
 
 	//boat moving backwards (press 's')
-	if ((boat.acceleration < 0) && (boat.speed <= 0))
+	if (boat.speed < (- 5.0f - 1*speedSwitch)) //stops the boat from going too fast if you keep adding acceleration, taking into account the speed change option
 	{
-		boat.acceleration += decayy;
+		boat.speed = -5.0f - 1 * speedSwitch;
+	}
+	if ((boat.acceleration < 0) && (boat.speed <= 0)) //when the boat starts accelerating backwards
+	{
+		boat.acceleration += 7*decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
-	else if ((boat.acceleration >= 0) && (boat.speed < 0))
+	else if ((boat.acceleration >= 0) && (boat.speed < 0)) // when the boat starts decelerating
 	{
-		boat.acceleration += 2*decayy;
+		boat.acceleration += 6*decayy;
 		boat.speed += boat.acceleration * deltaT;
 		if (boat.speed >= 0)
 		{
@@ -164,17 +171,21 @@ void timer(int value)
 	}
 
 	//handle boat angle incremental increase, to make the rotation animation
-	if ((boat.angle - boat.direction) > 0)
+	if (abs(boat.direction - boat.angle) < 0.1) //this helps deal with differences that arent divisble by decayy, example is boat.angle = 65.99043 boat.direction = 65.99057
 	{
-		boat.direction += decayy * (4 - (3.0f * speedSwitch));
-		if ((boat.direction > boat.angle) && (boat.speed == 0) || (boat.speed == 0))
+		boat.angle = boat.direction;
+	}
+	if ((boat.angle - boat.direction) > 0) //dealing with angle differences from sides 'a' and 'd'
+	{
+		boat.direction += decayy * (6 - (1.0f * speedSwitch));
+		if (boat.speed == 0) //when the boat stops going forward we want to make sure it stops rotating
 		{
 			boat.angle = boat.direction;
 		}
 	}
 	else if ((boat.angle - boat.direction) < 0)
 	{
-		boat.direction -= decayy * (4 - (3.0f * speedSwitch));
+		boat.direction -= decayy * (6 - (1.0f * speedSwitch));
 		if ((boat.direction < boat.angle) && (boat.speed == 0) || (boat.speed == 0))
 		{
 			boat.angle = boat.direction;
@@ -184,11 +195,11 @@ void timer(int value)
 	{
 		if (boat.direction > boat.angle)
 		{
-			boat.direction -= decayy * (4 - (3.0f * speedSwitch));
+			boat.direction -= decayy * (6 - (1.0f * speedSwitch));
 		}
 		else if (boat.direction < boat.angle)
 		{
-			boat.direction += decayy * (4 - (3.0f * speedSwitch));
+			boat.direction += decayy * (6 - (1.0f * speedSwitch));
 		}
 	}
 
@@ -299,7 +310,7 @@ void renderScene(void) {
 		pushMatrix(MODEL);
 		// """water"""
 		if (i == 0) {
-			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
+			//rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
 		}
 		// boat
 		if (i == 1)
@@ -448,25 +459,25 @@ void processKeys(unsigned char key, int xx, int yy)
 		activeCam = 2;
 		break;
 	case 'a': // Move Left
-		boat.angle -= 30.0f;  // Negative direction for left
+		boat.angle = boat.direction - 30.0f;  // Negative direction for left
 		if ((boat.angle / 360) < -1.0f)
 		{
 			boat.angle += 360;
 			boat.direction += 360;
 		}
-		boat.acceleration = 5.0f + (1.0f * speedSwitch);  // Set the speed
+		boat.acceleration = 10.0f + (1.0f * speedSwitch);  // Set the speed
 		break;
 	case 'd':  // Move Right
-		boat.angle += 30.0f;  // Positive direction for right
+		boat.angle = boat.direction + 30.0f;  // Positive direction for right
 		if ((boat.angle / 360) > 1.0f)
 		{
 			boat.angle -= 360;
 			boat.direction -= 360;
 		}
-		boat.acceleration = 5.0f + (1.0f * speedSwitch);  // Set the speed
+		boat.acceleration = 10.0f + (2.0f * speedSwitch);  // Set the speed
 		break;
 	case 's':
-		boat.acceleration = -5.0f - (1.0f * speedSwitch);
+		boat.acceleration = -10.0f - (2.0f * speedSwitch);
 		boat.angle = boat.direction;
 		break;
 	case 'o':
