@@ -449,3 +449,4 @@ Dependencies/
 Dependencies.exe
 fonts/
 freetype/
+.vs/*
