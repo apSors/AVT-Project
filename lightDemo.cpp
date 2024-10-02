@@ -33,6 +33,7 @@
 #include "geometry.h"
 
 #include "avtFreeType.h"
+#include "Texture_Loader.h"
 
 using namespace std;
 
@@ -64,7 +65,16 @@ extern float mNormal3x3[9];
 GLint pvm_uniformId;
 GLint vm_uniformId;
 GLint normal_uniformId;
-GLint lPos_uniformId;
+GLint lPos_uniformId;		// Point light
+GLint slPos_uniformId;		// Spotlight world position
+GLint slPos_uniformId2;		// Spotlight 2 world position
+GLint slDir_uniformId;		// Spotlight pointing diretion
+GLint slDir_uniformId2;		// Spotlight 2 world position
+GLint slAngle_uniformId;	// Spotlight angle
+GLint slAngle_uniformId2;	// Spotlight 2 angle
+GLint slExp_uniformId;		// Spotlight exponent
+GLint slExp_uniformId2;		// Spotlight 2 exponent
+
 GLint tex_loc, tex_loc1, tex_loc2;
 
 // Camera Position
@@ -80,9 +90,20 @@ float r = 10.0f;
 // Frame counting and FPS computation
 long myTime, timebase = 0, frame = 0;
 char s[32];
-float lightPos[4] = { 4.0f, 6.0f, 2.0f, 1.0f };
+float lightPos[4] = {10.0f, 6.0f, 10.0f, 1.0f};			// Point light world position
 
-//number of objects to be drawn
+float spotLightPos[4] = {0.0f, 3.0f, 0.0f, 1.0f};		// Spotlight world position
+float spotLightPos2[4] = {-3.0f, 4.0f, -4.0f, 1.0f};	// Spotlight 2 world postion
+
+float spotLightDir[4] = {0.0f, -1.0f, 0.0f, 0.0f};	// Spotlight pointing diretion 
+float spotLightDir2[4] = {-3.0f, -2.0f, 1.0f, 0.0f};	// Spotlight 2 pointing diretion
+
+float slAngle = 0.9;	// Spotlight angle (0-0.9999)
+float slAngle2 = 0.95;	// Spotlight 2 angle 
+
+float slExp = 10.0;		// Spotlight quality
+float slExp2 = 1.0;	// Spotlight 2 quality
+
 int numObj = 0;
 
 int activeCam = 0;
@@ -293,7 +314,28 @@ void renderScene(void) {
 	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
 	glUniform4fv(lPos_uniformId, 1, res);
 
-	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
+		float res[4];		// Point light world position
+		float res2[4];		// Spotlight world position 
+		float res3[4];		// Spotlight 2 world position
+		float res4[4];		// Spotlight poiting diretion
+		float res5[4];		// Spotlight 2 poiting diretion
+
+		multMatrixPoint(VIEW, lightPos, res);		// lightPos definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, spotLightPos, res2);  // spotLightPos definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, spotLightPos2, res3); // spotLightPos2 definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, spotLightDir, res4);	// spotLightDir definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, spotLightDir2, res5); // spotLightDir2 definido em World Coord so is converted to eye space
+
+		glUniform4fv(lPos_uniformId, 1, res);
+		glUniform4fv(slPos_uniformId, 1, res2);
+		glUniform4fv(slPos_uniformId2, 1, res3);
+		glUniform4fv(slDir_uniformId, 1, res4);
+		glUniform4fv(slDir_uniformId2, 1, res5);
+
+		glUniform1f(slAngle_uniformId, slAngle);
+		glUniform1f(slAngle_uniformId2, slAngle2);
+		glUniform1f(slExp_uniformId, slExp);
+		glUniform1f(slExp_uniformId2, slExp2);
 
 
 	for (int i = 0; i < numObj; ++i) {
@@ -390,7 +432,6 @@ void renderScene(void) {
 
 		// Render mesh
 		glBindVertexArray(myMeshes[objId].vao);
-
 		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
@@ -398,7 +439,6 @@ void renderScene(void) {
 		objId++;
 	}
 	
-
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 	glDisable(GL_DEPTH_TEST);
@@ -614,7 +654,19 @@ GLuint setupShaders() {
 	pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
-	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
+
+	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");		// Point light world position
+	slPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_pos");		// Spotlight world position
+	slPos_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_pos2");	// Spotlight 2 world position
+	slDir_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_dir");		// Spotlight 2 world position
+	slDir_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_dir2");	// Spotlight 2 world position
+
+	slAngle_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_angle");		// Spotlight angle
+	slAngle_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_angle2");	// Spotlight 2 angle
+
+	slExp_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_exp");		// Spotlight exponent
+	slExp_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_exp2");	// Spotlight 2 exponent
+
 	tex_loc = glGetUniformLocation(shader.getProgramIndex(), "texmap");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
