@@ -8,7 +8,7 @@
 // The code comes with no warranties, use it at your own risk.
 // You may use it, or parts of it, wherever you want.
 // 
-// Author: Jo„o Madeiras Pereira
+// Author: Jo√£o Madeiras Pereira
 //
 
 #include <math.h>
@@ -33,6 +33,7 @@
 #include "geometry.h"
 
 #include "avtFreeType.h"
+#include "Texture_Loader.h"
 
 using namespace std;
 
@@ -64,7 +65,16 @@ extern float mNormal3x3[9];
 GLint pvm_uniformId;
 GLint vm_uniformId;
 GLint normal_uniformId;
-GLint lPos_uniformId;
+GLint lPos_uniformId;		// Point light
+GLint slPos_uniformId;		// Spotlight world position
+GLint slPos_uniformId2;		// Spotlight 2 world position
+GLint slDir_uniformId;		// Spotlight pointing diretion
+GLint slDir_uniformId2;		// Spotlight 2 world position
+GLint slAngle_uniformId;	// Spotlight angle
+GLint slAngle_uniformId2;	// Spotlight 2 angle
+GLint slExp_uniformId;		// Spotlight exponent
+GLint slExp_uniformId2;		// Spotlight 2 exponent
+
 GLint tex_loc, tex_loc1, tex_loc2;
 
 // Camera Position
@@ -80,7 +90,19 @@ float r = 10.0f;
 // Frame counting and FPS computation
 long myTime, timebase = 0, frame = 0;
 char s[32];
-float lightPos[4] = { 4.0f, 6.0f, 2.0f, 1.0f };
+float lightPos[4] = {10.0f, 6.0f, 10.0f, 1.0f};			// Point light world position
+
+float spotLightPos[4] = {0.0f, 3.0f, 0.0f, 1.0f};		// Spotlight world position
+float spotLightPos2[4] = {-3.0f, 4.0f, -4.0f, 1.0f};	// Spotlight 2 world postion
+
+float spotLightDir[4] = {0.0f, -1.0f, 0.0f, 0.0f};	// Spotlight pointing diretion 
+float spotLightDir2[4] = {-3.0f, -2.0f, 1.0f, 0.0f};	// Spotlight 2 pointing diretion
+
+float slAngle = 0.9;	// Spotlight angle (0-0.9999)
+float slAngle2 = 0.95;	// Spotlight 2 angle 
+
+float slExp = 10.0;		// Spotlight quality
+float slExp2 = 1.0;	// Spotlight 2 quality
 
 //number of objects to be drawn
 int numObj = 0;
@@ -247,6 +269,55 @@ void timer(int value)
 			boat.direction += decayy * (4 - (3.0f * speedSwitch));
 		}
 	}
+	if ((boat.acceleration < 0) && (boat.speed <= 0)) //when the boat starts accelerating backwards
+	{
+		boat.acceleration += 7*decayy;
+		boat.speed += boat.acceleration * deltaT;
+	}
+	else if ((boat.acceleration >= 0) && (boat.speed < 0)) // when the boat starts decelerating
+	{
+		boat.acceleration += 6*decayy;
+		boat.speed += boat.acceleration * deltaT;
+		if (boat.speed >= 0)
+		{
+			boat.acceleration = 0;
+			boat.speed = 0;
+		}
+	}
+
+	//handle boat angle incremental increase, to make the rotation animation
+	if (abs(boat.direction - boat.angle) < 0.1) //this helps deal with differences that arent divisble by decayy, example is boat.angle = 65.99043 boat.direction = 65.99057
+	{
+		boat.angle = boat.direction;
+	}
+	if ((boat.angle - boat.direction) > 0) //dealing with angle differences from sides 'a' and 'd'
+	{
+		boat.direction += decayy * (6 - (1.0f * speedSwitch));
+		if (boat.speed == 0) //when the boat stops going forward we want to make sure it stops rotating
+		{
+			boat.angle = boat.direction;
+		}
+	}
+	else if ((boat.angle - boat.direction) < 0)
+	{
+		boat.direction -= decayy * (6 - (1.0f * speedSwitch));
+		if ((boat.direction < boat.angle) && (boat.speed == 0) || (boat.speed == 0))
+		{
+			boat.angle = boat.direction;
+		}
+	}
+	else if (boat.angle == 0)
+	{
+		if (boat.direction > boat.angle)
+		{
+			boat.direction -= decayy * (6 - (1.0f * speedSwitch));
+		}
+		else if (boat.direction < boat.angle)
+		{
+			boat.direction += decayy * (6 - (1.0f * speedSwitch));
+		}
+	}
+
 
 	glutTimerFunc(1 / deltaT, timer, 0);
 }
@@ -333,14 +404,33 @@ void renderScene(void) {
 
 	glUseProgram(shader.getProgramIndex());
 
-	//send the light position in eye coordinates
-	//glUniform4fv(lPos_uniformId, 1, lightPos); //efeito capacete do mineiro, ou seja lighPos foi definido em eye coord 
-
-	float res[4];
+  float res[4];
 	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
 	glUniform4fv(lPos_uniformId, 1, res);
 
-	int objId = 0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
+		float res[4];		// Point light world position
+		float res2[4];		// Spotlight world position 
+		float res3[4];		// Spotlight 2 world position
+		float res4[4];		// Spotlight poiting diretion
+		float res5[4];		// Spotlight 2 poiting diretion
+
+		multMatrixPoint(VIEW, lightPos, res);		// lightPos definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, spotLightPos, res2);  // spotLightPos definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, spotLightPos2, res3); // spotLightPos2 definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, spotLightDir, res4);	// spotLightDir definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, spotLightDir2, res5); // spotLightDir2 definido em World Coord so is converted to eye space
+
+		glUniform4fv(lPos_uniformId, 1, res);
+		glUniform4fv(slPos_uniformId, 1, res2);
+		glUniform4fv(slPos_uniformId2, 1, res3);
+		glUniform4fv(slDir_uniformId, 1, res4);
+		glUniform4fv(slDir_uniformId2, 1, res5);
+
+		glUniform1f(slAngle_uniformId, slAngle);
+		glUniform1f(slAngle_uniformId2, slAngle2);
+		glUniform1f(slExp_uniformId, slExp);
+		glUniform1f(slExp_uniformId2, slExp2);
+
 
 	for (int i = 0; i < numObj; ++i) {
 
@@ -356,7 +446,7 @@ void renderScene(void) {
 		pushMatrix(MODEL);
 		// """water"""
 		if (i == 0) {
-			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
+			//rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
 		}
 		// boat
 		if (i == 1)
@@ -364,6 +454,9 @@ void renderScene(void) {
 			translate(MODEL, boat.pos[0] - 0.0f, boat.pos[2], boat.pos[1] - 0.0f);
 			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
 		}
+		if (i == 0) { 
+			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f); 
+		} 
 		//base of 1st house 
 		else if (i == 2) {
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
@@ -371,6 +464,7 @@ void renderScene(void) {
 		}
 		//roof of 1st house
 		else if (i == 3) {
+
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, 5.0f, 1.0f, 5.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
@@ -478,14 +572,13 @@ void renderScene(void) {
 
 		// Render mesh
 		glBindVertexArray(myMeshes[objId].vao);
-
 		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
 		popMatrix(MODEL);
 		objId++;
 	}
-
+	
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 	glDisable(GL_DEPTH_TEST);
@@ -701,7 +794,19 @@ GLuint setupShaders() {
 	pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
-	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");
+
+	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");		// Point light world position
+	slPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_pos");		// Spotlight world position
+	slPos_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_pos2");	// Spotlight 2 world position
+	slDir_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_dir");		// Spotlight 2 world position
+	slDir_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_dir2");	// Spotlight 2 world position
+
+	slAngle_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_angle");		// Spotlight angle
+	slAngle_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_angle2");	// Spotlight 2 angle
+
+	slExp_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_exp");		// Spotlight exponent
+	slExp_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_exp2");	// Spotlight 2 exponent
+
 	tex_loc = glGetUniformLocation(shader.getProgramIndex(), "texmap");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
