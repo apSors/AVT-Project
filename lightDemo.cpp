@@ -404,9 +404,6 @@ void renderScene(void) {
 
 	glUseProgram(shader.getProgramIndex());
 
-  float res[4];
-	multMatrixPoint(VIEW, lightPos, res);   //lightPos definido em World Coord so is converted to eye space
-	glUniform4fv(lPos_uniformId, 1, res);
 
 		float res[4];		// Point light world position
 		float res2[4];		// Spotlight world position 
@@ -431,6 +428,7 @@ void renderScene(void) {
 		glUniform1f(slExp_uniformId, slExp);
 		glUniform1f(slExp_uniformId2, slExp2);
 
+		int objId = 0;
 
 	for (int i = 0; i < numObj; ++i) {
 
