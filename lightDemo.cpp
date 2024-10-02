@@ -123,15 +123,15 @@ float decayy = 0.1f;
 // Structure to store data for each shark fin (cone)
 struct SharkFin {
 	float speed = 0.0f;
-	float pos[3] = { 0.0f, 0.0f, 0.0f };
+	float pos[3] = { 1000.0f, 1000.0f, 0.0f };
 	float angle = 0.0f;
 	float direction = 0.0f;
+	float slope = 0.0f;
+	float initialPos[3] = { 0.0f, 0.0f, 0.0f};
 };
-
 // Shark fins
-SharkFin fin_1;
-SharkFin fin_2;
-
+const int sharkfinNumber = 4;
+SharkFin fins[sharkfinNumber];
 
 // Function to generate a random float value between min and max
 float randomFloat(float min, float max) {
@@ -146,6 +146,7 @@ void timer(int value)
 	glutSetWindow(WindowHandle);
 	glutSetWindowTitle(s.c_str());
 	FrameCount = 0;
+	int i = 0;
 
 	// Boat movement logic
 	boat.pos[0] += ((boat.speed * deltaT) + (1/2 * boat.acceleration * pow(deltaT,2))) * cos(boat.direction * 3.14 / 180);
@@ -156,22 +157,32 @@ void timer(int value)
 	float radius_1 = 5.0f;  // Radius for fin 1's path
 	float radius_2 = 7.0f;  // Radius for fin 2's path
 
-	// Update the angle based on speed and deltaT
-	fin_1.angle += fin_1.speed * deltaT;
-	fin_2.angle += fin_2.speed * deltaT;
+	for (i = 0; i < sharkfinNumber; i++)
+	{
+		
 
-	// Keep the angle between 0 and 360 degrees
-	if (fin_1.angle > 360.0f) fin_1.angle -= 360.0f;
-	if (fin_2.angle > 360.0f) fin_2.angle -= 360.0f;
+		if ((abs(fins[i].pos[0] - fins[i].initialPos[0]) > 5.0f) || ((abs(fins[i].pos[1] - fins[i].initialPos[1])) > 5.0f))
+		{
+			fins[i].initialPos[0] = (float)(5.0 * cos(rand())) + boat.pos[0];
+			fins[i].initialPos[1] = (float)(5.0 * sin(rand())) + boat.pos[1];
+			fins[i].slope = ((fins[i].initialPos[1] - boat.pos[1]) / (fins[i].initialPos[0] - boat.pos[0]));
+			fins[i].angle = atan(fins[i].slope);
+			fins[i].pos[0] = fins[i].initialPos[0];
+			fins[i].pos[1] = fins[i].initialPos[1];
 
-	//fins movement logic
-	fin_1.pos[0] = radius_1 * cos(fin_1.angle * 3.14f / 180.0f);  // X position
-	fin_1.pos[1] = radius_1 * sin(fin_1.angle * 3.14f / 180.0f);  // Y position
+		}
 
+		
+		// Keep the angle between 0 and 360 degrees
+		if (fins[i].angle > 3.14) { fins[i].angle -= 3.14f; }
+		else if (fins[i].angle < -3.14f) { fins[i].angle += 3.14f; }
 
-	fin_2.pos[0] = radius_2 * cos(fin_2.angle * 3.14f / 180.0f);  // X position
-	fin_2.pos[1] = (radius_2 / 2.0f) * sin(fin_2.angle * 3.14f / 180.0f);  // Y position
+		//fins movement logic
+		// we want them to move in a straight line, starting at their spawn point moving towards the boat position
+		fins[i].pos[0] += (fins[i].slope * deltaT) * cos(fins[i].angle);  // X position
+		fins[i].pos[1] += (fins[i].slope * deltaT) * sin(fins[i].angle);  // Y position
 
+	}
 
 	//boat acceleration reduction
 	//boat moving forwards (press 'a' or 'd')
@@ -403,16 +414,16 @@ void renderScene(void) {
 		}
 		//shark fin 1
 		else if (i == 11) {
-			translate(MODEL, fin_1.pos[0] - 2.0f, fin_1.pos[2], fin_1.pos[1] - 1.0f); // Adjust for fin's position
-			rotate(MODEL, -fin_1.angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
+			translate(MODEL, fins[0].pos[0] - 2.0f, fins[0].pos[2], fins[0].pos[1] - 1.0f); // Adjust for fin's position
+			rotate(MODEL, -fins[0].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
 
 			//translate(MODEL, 5.0f, 0.0f, 5.0f);
 			//rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//shark fin 2
 		else if (i == 12) {
-			translate(MODEL, fin_2.pos[0] - 4.0f, fin_2.pos[2], fin_2.pos[1] - 0.0f); // Adjust for fin's position
-			rotate(MODEL, -fin_2.angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
+			translate(MODEL, fins[1].pos[0] - 4.0f, fins[1].pos[2], fins[1].pos[1] - 0.0f); // Adjust for fin's position
+			rotate(MODEL, -fins[1].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
 		
 
 			//translate(MODEL, 4.0f, 0.0f, -7.0f);
@@ -420,8 +431,43 @@ void renderScene(void) {
 		}
 
 		// Initial settings for fins' speed and direction:
-		fin_1.speed = 30.0f;  // Degrees per second
-		fin_2.speed = 25.0f;  // Degrees per second
+		for (int j = 0; j < sharkfinNumber; j++)
+		{
+			fins[j].speed = 30.0f;  // Degrees per second
+		}
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(myMeshes[objId].vao);
+
+		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		objId++;
+	}
+
+	for (int i = 0; i < sharkfinNumber; i++)
+	{
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[objId].mat.shininess);
+		pushMatrix(MODEL);
+
+		translate(MODEL, fins[i].pos[0], fins[i].pos[2], fins[i].pos[1]); // Adjust for fin's position
+		//rotate(MODEL, -fins[i].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
 
 		// send matrices to OGL
 		computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -836,29 +882,18 @@ void init()
 	myMeshes.push_back(amesh);
 	numObj++;
 
-	//shark fin 1
-	amesh = createCone(1, 1, 3);
-	memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 10 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 10 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-
-	//shark fin 2
-	amesh = createCone(1, 1, 3);
-	memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 10 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 10 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-
-
+	//shark fins
+	for (int i = 0; i < sharkfinNumber; i++)
+	{
+		amesh = createCone(1, 0.5f, 3);
+		memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
+		memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
+		memcpy(amesh.mat.specular, spec, 10 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 10 * sizeof(float));
+		amesh.mat.shininess = shininess;
+		amesh.mat.texCount = texcount;
+		myMeshes.push_back(amesh);
+	}
 
 	/*// create geometry and VAO of the pawn
 	amesh = createPawn();
