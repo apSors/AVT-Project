@@ -75,6 +75,8 @@ GLint slAngle_uniformId2;	// Spotlight 2 angle
 GLint slExp_uniformId;		// Spotlight exponent
 GLint slExp_uniformId2;		// Spotlight 2 exponent
 
+GLuint TextureArray[3];
+
 GLint tex_loc, tex_loc1, tex_loc2;
 
 // Camera Position
@@ -430,6 +432,23 @@ void renderScene(void) {
 
 		int objId = 0;
 
+		//Associar os Texture Units aos Objects Texture
+		//stone.tga loaded in TU0; checker.tga loaded in TU1;  lightwood.tga loaded in TU2
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+
+		//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
+		glUniform1i(tex_loc, 0);
+		glUniform1i(tex_loc1, 1);
+		glUniform1i(tex_loc2, 2);
+
 	for (int i = 0; i < numObj; ++i) {
 
 		// send the material
@@ -602,6 +621,7 @@ void renderScene(void) {
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glutSwapBuffers();
 }
 
@@ -779,7 +799,7 @@ GLuint setupShaders() {
 	glBindFragDataLocation(shader.getProgramIndex(), 0, "colorOut");
 	glBindAttribLocation(shader.getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
 	glBindAttribLocation(shader.getProgramIndex(), NORMAL_ATTRIB, "normal");
-	//glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
+	glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
 
 	glLinkProgram(shader.getProgramIndex());
 	printf("InfoLog for Model Rendering Shader\n%s\n\n", shaderText.getAllInfoLogs().c_str());
@@ -851,6 +871,12 @@ void init()
 	camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camY = r * sin(beta * 3.14f / 180.0f);
+
+	//Texture Object definition
+	glGenTextures(3, TextureArray);
+	Texture2D_Loader(TextureArray, "stone.tga", 0);
+	Texture2D_Loader(TextureArray, "checker.png", 1);
+	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 
 	//values for the """water"""
 	float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
