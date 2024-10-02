@@ -234,7 +234,7 @@ void renderScene(void) {
 		glUniform1f(slAngle_uniformId, slAngle);
 		glUniform1f(slAngle_uniformId2, slAngle2);
 		glUniform1f(slExp_uniformId, slExp);
-		glUniform1f(slExp_uniformId, slExp2);
+		glUniform1f(slExp_uniformId2, slExp2);
 
 	int objId=0; //id of the object mesh - to be used as index of mesh: Mymeshes[objID] means the current mesh
 
