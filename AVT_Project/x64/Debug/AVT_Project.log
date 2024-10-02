@@ -1,12 +1,15 @@
 ﻿  lightDemo.cpp
-C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(129,17): warning C4244: 'argument': conversion from 'float' to 'unsigned int', possible loss of data
-C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(199,14): warning C4244: 'initializing': conversion from 'GLint' to 'float', possible loss of data
-C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(204,15): warning C4305: 'argument': truncation from 'double' to 'float'
-C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(207,43): warning C4305: 'argument': truncation from 'double' to 'float'
-C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(321,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(321,70): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(321,53): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(321,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
-C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(323,84): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(151,88): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
+C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(152,88): warning C4244: '+=': conversion from 'double' to 'float', possible loss of data
+C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(240,18): warning C4244: 'argument': conversion from 'float' to 'unsigned int', possible loss of data
+C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(310,14): warning C4244: 'initializing': conversion from 'GLint' to 'float', possible loss of data
+C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(315,15): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(318,43): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(459,103): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(459,70): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(459,53): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(459,20): warning C4244: 'argument': conversion from 'int' to 'float', possible loss of data
+C:\Users\dpsoa\Documents\GitHub\AVT-Project\lightDemo.cpp(461,84): warning C4305: 'argument': truncation from 'double' to 'float'
+  LINK : C:\Users\dpsoa\Documents\GitHub\AVT-Project\x64\Debug\AVT_Project.exe not found or not built by the last incremental link; performing full link
   AVT_Project.vcxproj -> C:\Users\dpsoa\Documents\GitHub\AVT-Project\x64\Debug\AVT_Project.exe
   0 File(s) copied

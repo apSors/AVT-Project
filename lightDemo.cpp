@@ -148,7 +148,7 @@ void timer(int value)
 	FrameCount = 0;
 
 	// Boat movement logic
-	boat.pos[0] += ((boat.speed * deltaT) + (1/2 * boat.acceleration * pow(deltaT,2))) * cos(boat.direction * 3.14 / 180);
+	boat.pos[0] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * cos(boat.direction * 3.14 / 180);
 	boat.pos[1] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * sin(boat.direction * 3.14 / 180);
 	//boat.pos[1] += boat.speed * sin(boat.direction * 3.14 / 180) * deltaT;
 
@@ -182,7 +182,7 @@ void timer(int value)
 	}
 	else if ((boat.acceleration <= 0) && (boat.speed > 0))
 	{
-		boat.acceleration -= 2*decayy;
+		boat.acceleration -= 2 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 		if (boat.speed <= 0)
 		{
@@ -199,7 +199,7 @@ void timer(int value)
 	}
 	else if ((boat.acceleration >= 0) && (boat.speed < 0))
 	{
-		boat.acceleration += 2*decayy;
+		boat.acceleration += 2 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 		if (boat.speed >= 0)
 		{
@@ -413,7 +413,7 @@ void renderScene(void) {
 		else if (i == 12) {
 			translate(MODEL, fin_2.pos[0] - 4.0f, fin_2.pos[2], fin_2.pos[1] - 0.0f); // Adjust for fin's position
 			rotate(MODEL, -fin_2.angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
-		
+
 
 			//translate(MODEL, 4.0f, 0.0f, -7.0f);
 			//rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
@@ -529,7 +529,7 @@ void processKeys(unsigned char key, int xx, int yy)
 		{
 			speedSwitch = 0;
 		}
-	
+
 	}
 }
 
