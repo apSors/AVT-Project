@@ -134,6 +134,8 @@ public:
 	float pos[3] = { 0.0f, 0.0f, 0.0f };
 	float angle = 0.0f;
 	float direction = 0.0f;
+	const float bb_radius = sqrt(0.75);
+	float bb_center[3] = { 0.5f, 0.5f, 0.5f };
 };
 
 Boat boat;
@@ -144,12 +146,18 @@ float decayy = 0.1f;
 
 // Structure to store data for each shark fin (cone)
 struct SharkFin {
+	//fin speed and position
 	float speed = 0.0f;
 	float pos[3] = { 1000.0f, 1000.0f, 0.0f };
+	//fin angle and fin direction, angle changes instantly when a or d are pressed and direction gradually changes to that value
 	float angle = 0.0f;
 	float direction = 0.0f;
+	//the slope of the line and initial position used to make the pathing of the fins
 	float slope = 0.0f;
 	float initialPos[3] = { 0.0f, 0.0f, 0.0f};
+	// radius and center for the sphere
+	const float bb_radius = 1.0f;
+	float bb_center[3] = { 0.0f, 0.0f, 0.0f };
 };
 // Shark fins
 const int sharkfinNumber = 4;
@@ -171,8 +179,9 @@ void timer(int value)
 	int i = 0;
 
 	// Boat movement logic
-	boat.pos[0] += ((boat.speed * deltaT) + (1/2 * boat.acceleration * pow(deltaT,2))) * cos(boat.direction * 3.14 / 180);
+	boat.pos[0] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * cos(boat.direction * 3.14 / 180);
 	boat.pos[1] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * sin(boat.direction * 3.14 / 180);
+	
 	//boat.pos[1] += boat.speed * sin(boat.direction * 3.14 / 180) * deltaT;
 
 	// Define the radii for the paths (circular or elliptical)
@@ -181,8 +190,6 @@ void timer(int value)
 
 	for (i = 0; i < sharkfinNumber; i++)
 	{
-		
-
 		if ((abs(fins[i].pos[0] - fins[i].initialPos[0]) > 5.0f) || ((abs(fins[i].pos[1] - fins[i].initialPos[1])) > 5.0f))
 		{
 			fins[i].initialPos[0] = (float)(5.0 * cos(rand())) + boat.pos[0];
@@ -193,7 +200,6 @@ void timer(int value)
 			fins[i].pos[1] = fins[i].initialPos[1];
 
 		}
-
 		
 		// Keep the angle between 0 and 360 degrees
 		if (fins[i].angle > 3.14) { fins[i].angle -= 3.14f; }
@@ -203,6 +209,8 @@ void timer(int value)
 		// we want them to move in a straight line, starting at their spawn point moving towards the boat position
 		fins[i].pos[0] += (fins[i].slope * deltaT) * cos(fins[i].angle);  // X position
 		fins[i].pos[1] += (fins[i].slope * deltaT) * sin(fins[i].angle);  // Y position
+
+
 
 	}
 
@@ -240,6 +248,7 @@ void timer(int value)
 			boat.speed = 0;
 		}
 	}
+
 
 	//handle boat angle incremental increase, to make the rotation animation
 	if ((boat.angle - boat.direction) > 0)
@@ -362,9 +371,9 @@ void renderScene(void) {
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
 
-	cams[0].pos[0] = camX + boat.pos[0];
-	cams[0].pos[1] = camY + boat.pos[2];
-	cams[0].pos[2] = camZ + boat.pos[1];
+	cams[0].pos[0] = camX + boat.bb_center[0];
+	cams[0].pos[1] = camY + boat.bb_center[2];
+	cams[0].pos[2] = camZ + boat.bb_center[1];
 
 	cams[1].type = 1;
 	cams[1].pos[1] = 20;
@@ -374,7 +383,7 @@ void renderScene(void) {
 	// Follow Cam
 	if (activeCam == 0) {
 		// set the camera using a function similar to gluLookAt
-		lookAt(cams[0].pos[0], cams[0].pos[1], cams[0].pos[2], boat.pos[0], boat.pos[2], boat.pos[1], 0, 1, 0);
+		lookAt(cams[0].pos[0], cams[0].pos[1], cams[0].pos[2], boat.bb_center[0], boat.bb_center[2], boat.bb_center[1], 0, 1, 0);
 	}
 	// Static Ortho Cam
 	else if (activeCam == 1) {
@@ -504,21 +513,14 @@ void renderScene(void) {
 			translate(MODEL, 1.4f, 1.2f, 0.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
-		//shark fin 1
+		//ball
 		else if (i == 11) {
-			translate(MODEL, fins[0].pos[0] - 2.0f, fins[0].pos[2], fins[0].pos[1] - 1.0f); // Adjust for fin's position
-			rotate(MODEL, -fins[0].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
-
+			//translate(MODEL, 0.5f, 0.5f, 0.5f);
+			translate(MODEL, boat.bb_center[0], boat.bb_center[2], boat.bb_center[1]);
+			
+			//translate(MODEL, fins[0].pos[0] - 2.0f, fins[0].pos[2], fins[0].pos[1] - 1.0f); // Adjust for fin's position
+			//rotate(MODEL, -fins[0].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
 			//translate(MODEL, 5.0f, 0.0f, 5.0f);
-			//rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
-		}
-		//shark fin 2
-		else if (i == 12) {
-			translate(MODEL, fins[1].pos[0] - 4.0f, fins[1].pos[2], fins[1].pos[1] - 0.0f); // Adjust for fin's position
-			rotate(MODEL, -fins[1].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
-		
-
-			//translate(MODEL, 4.0f, 0.0f, -7.0f);
 			//rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 
@@ -985,10 +987,20 @@ void init()
 	myMeshes.push_back(amesh);
 	numObj++;
 
+	amesh = createSphere(boat.bb_radius, 500);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+
 	//shark fins
 	for (int i = 0; i < sharkfinNumber; i++)
 	{
-		amesh = createCone(1, 0.5f, 3);
+		amesh = createCone(1, 1, 3);
 		memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
 		memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
 		memcpy(amesh.mat.specular, spec, 10 * sizeof(float));
