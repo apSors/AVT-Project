@@ -160,12 +160,22 @@ struct SharkFin {
 	float bb_center[3] = { 0.0f, 0.0f, 0.0f };
 };
 // Shark fins
-const int sharkfinNumber = 4;
+const int sharkfinNumber = 1;
 SharkFin fins[sharkfinNumber];
 
 // Function to generate a random float value between min and max
 float randomFloat(float min, float max) {
 	return min + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (max - min));
+}
+
+bool isColliding(float radius1, float *center1, float radius2, float *center2) {
+	// get the distance between the centers sqrt((x1-x2)^2 + (y1-y2)^2 + (z1-z2)^2)
+	float center_diff = sqrt(pow(center1[0] - center2[0], 2) + pow(center1[1] - center2[1], 2) + pow(center1[2] - center2[2], 2));
+	//get the total length of both radii combined
+	float radiusLength = radius1 + radius2;
+
+	if (center_diff < radiusLength) { return true; }
+	else { return false; };
 }
 
 void timer(int value)
@@ -176,7 +186,6 @@ void timer(int value)
 	glutSetWindow(WindowHandle);
 	glutSetWindowTitle(s.c_str());
 	FrameCount = 0;
-	int i = 0;
 
 	// Boat movement logic
 	boat.pos[0] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * cos(boat.direction * 3.14 / 180);
@@ -188,7 +197,7 @@ void timer(int value)
 	float radius_1 = 5.0f;  // Radius for fin 1's path
 	float radius_2 = 7.0f;  // Radius for fin 2's path
 
-	for (i = 0; i < sharkfinNumber; i++)
+	for (int i = 0; i < sharkfinNumber; i++)
 	{
 		if ((abs(fins[i].pos[0] - fins[i].initialPos[0]) > 5.0f) || ((abs(fins[i].pos[1] - fins[i].initialPos[1])) > 5.0f))
 		{
@@ -210,15 +219,15 @@ void timer(int value)
 		fins[i].pos[0] += (fins[i].slope * deltaT) * cos(fins[i].angle);  // X position
 		fins[i].pos[1] += (fins[i].slope * deltaT) * sin(fins[i].angle);  // Y position
 
-
-
+		fins[i].bb_center[0] = fins[i].pos[0];
+		fins[i].bb_center[1] = fins[i].pos[1];
 	}
 
 	//boat acceleration reduction
 	//boat moving forwards (press 'a' or 'd')
 	if ((boat.acceleration > 0) && (boat.speed >= 0))
 	{
-		boat.acceleration -= decayy;
+		boat.acceleration -= 3*decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
 	else if ((boat.acceleration <= 0) && (boat.speed > 0))
@@ -235,7 +244,7 @@ void timer(int value)
 	//boat moving backwards (press 's')
 	if ((boat.acceleration < 0) && (boat.speed <= 0))
 	{
-		boat.acceleration += decayy;
+		boat.acceleration += 3*decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
 	else if ((boat.acceleration >= 0) && (boat.speed < 0))
@@ -249,6 +258,42 @@ void timer(int value)
 		}
 	}
 
+	boat.bb_center[0] = boat.pos[0] + (sqrt(2) / 2) * cos(((boat.direction * 3.1415) / 180) + 3.1415 / 4);
+	boat.bb_center[1] = boat.pos[1] + (sqrt(2) / 2) * sin(((boat.direction * 3.1415) / 180) + 3.1415 / 4);
+
+	//check for collision between boat and fins
+	for (int i = 0; i < sharkfinNumber; i++)
+	{
+		if (isColliding(boat.bb_radius, boat.bb_center, fins[i].bb_radius, fins[i].bb_center))
+		{
+			//vector that dictates what direction the objects will go when they collide
+			float centerVector[3] = { boat.bb_center[0] - fins[i].bb_center[0], boat.bb_center[1] - fins[i].bb_center[1], boat.bb_center[2] - fins[i].bb_center[2] };
+			normalize(centerVector);
+			
+			//vector that stores boat speed.x, speed.y and speed.z (always 0)
+			float boatdirectionalSpeed[3] = { boat.speed * cos(boat.direction), boat.speed * sin(boat.direction), 0.0f };
+			//vector that stores fin speed.x, speed.y and speed.z (always 0)
+			float findirectionalSpeed[3] = { fins[i].speed * cos(boat.direction), fins[i].speed * sin(boat.direction), 0.0f};
+			//relative speed of the collision expressed in a 3d vector
+			float relativeSpeed[3] = { boatdirectionalSpeed[0] - findirectionalSpeed[0], boatdirectionalSpeed[1] - findirectionalSpeed[1], boatdirectionalSpeed[2] - findirectionalSpeed[2] };
+
+			//final speed of the collision considering the direction of the collision
+			float collisionSpeed = dotProduct(relativeSpeed, centerVector);
+			//now that the speed is calculated we must apply it to both objects
+			/*while (isColliding(boat.bb_radius, boat.bb_center, fins[i].bb_radius, fins[i].bb_center))
+			{
+				boat.bb_center[0] += 0.01f * centerVector[0];
+				boat.pos[0] += 0.01f * centerVector[0];
+				boat.bb_center[1] += 0.01f * centerVector[0];
+				boat.pos[1] += 0.01f * centerVector[1];
+			}*/
+
+			boat.acceleration = 0;
+			boat.speed = collisionSpeed;
+			boat.direction = (atan2(centerVector[0], centerVector[2])*180)/3.1415;
+			boat.angle = (atan2(centerVector[0], centerVector[2]) * 180) / 3.1415;
+		}
+	}
 
 	//handle boat angle incremental increase, to make the rotation animation
 	if ((boat.angle - boat.direction) > 0)
@@ -398,7 +443,7 @@ void renderScene(void) {
 
 	glGetIntegerv(GL_VIEWPORT, m_view);
 
-	float ratio = (m_view[2] - m_view[0]) / (m_view[3] - m_view[1]);
+	float ratio = (float)(m_view[2] - m_view[0]) / (m_view[3] - m_view[1]);
 
 	loadIdentity(PROJECTION);
 
@@ -560,6 +605,37 @@ void renderScene(void) {
 		glUniform1f(loc, myMeshes[objId].mat.shininess);
 		pushMatrix(MODEL);
 
+		translate(MODEL, fins[i].pos[0], fins[i].pos[2], fins[i].pos[1]); // Adjust for fin's position
+		//rotate(MODEL, -fins[i].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(myMeshes[objId].vao);
+		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		objId++;
+	}
+	for (int i = 0; i < sharkfinNumber; i++)
+	{
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[objId].mat.shininess);
+		pushMatrix(MODEL);
+		
 		translate(MODEL, fins[i].pos[0], fins[i].pos[2], fins[i].pos[1]); // Adjust for fin's position
 		//rotate(MODEL, -fins[i].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
 
@@ -1005,6 +1081,17 @@ void init()
 		memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
 		memcpy(amesh.mat.specular, spec, 10 * sizeof(float));
 		memcpy(amesh.mat.emissive, emissive, 10 * sizeof(float));
+		amesh.mat.shininess = shininess;
+		amesh.mat.texCount = texcount;
+		myMeshes.push_back(amesh);
+	}
+	for (int i = 0; i < sharkfinNumber; i++)
+	{
+		amesh = createSphere(boat.bb_radius, 500);
+		memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
 		amesh.mat.shininess = shininess;
 		amesh.mat.texCount = texcount;
 		myMeshes.push_back(amesh);
