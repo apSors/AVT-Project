@@ -65,15 +65,30 @@ extern float mNormal3x3[9];
 GLint pvm_uniformId;
 GLint vm_uniformId;
 GLint normal_uniformId;
-GLint lPos_uniformId;		// Point light
-GLint slPos_uniformId;		// Spotlight world position
-GLint slPos_uniformId2;		// Spotlight 2 world position
-GLint slDir_uniformId;		// Spotlight pointing diretion
-GLint slDir_uniformId2;		// Spotlight 2 world position
-GLint slAngle_uniformId;	// Spotlight angle
-GLint slAngle_uniformId2;	// Spotlight 2 angle
-GLint slExp_uniformId;		// Spotlight exponent
-GLint slExp_uniformId2;		// Spotlight 2 exponent
+
+GLint sunPos_uniformId;				// Sun light world position
+
+GLint buoyPos_uniformId;			// Buoy light world position
+GLint buoyPos2_uniformId;			// Buoy 2 light world position
+GLint buoyPos3_uniformId;			// Buoy 3 light world position
+GLint buoyPos4_uniformId;			// Buoy 4 light world position
+GLint buoyPos5_uniformId;			// Buoy 5 light world position
+GLint buoyPos6_uniformId;			// Buoy 6 light world position
+
+GLint buoyConstantAttenuation_unirformId; 
+GLint buoyLinearAttenuation_unirformId;
+GLint buoyQuadraticAttenuation_unirformId;
+
+GLint headlightPos_uniformId;		// Boat headlight world position
+GLint headlightPos2_uniformId;		// Boat headlight 2 world position
+GLint headlightDir_uniformId;		// Boat headlight pointing diretion
+GLint headlightDir2_uniformId;		// Boat headlight 2 world position
+GLint headlightAngle_uniformId;		// Boat headlight angle
+GLint headlightExp_uniformId;		// Boat headlight exponent
+
+GLint isSunActive_uniformId;
+GLint isBuoyLightsActive_uniformId;
+GLint isHeadlightsActive_uniformId;
 
 GLint tex_loc, tex_loc1, tex_loc2;
 
@@ -90,19 +105,23 @@ float r = 10.0f;
 // Frame counting and FPS computation
 long myTime, timebase = 0, frame = 0;
 char s[32];
-float lightPos[4] = {10.0f, 6.0f, 10.0f, 1.0f};			// Point light world position
 
-float spotLightPos[4] = {0.0f, 3.0f, 0.0f, 1.0f};		// Spotlight world position
-float spotLightPos2[4] = {-3.0f, 4.0f, -4.0f, 1.0f};	// Spotlight 2 world postion
+float sunLightPos[4] = {-5.0f, 5.0f, 15.0f, 1.0f};		// Sun light world position
 
-float spotLightDir[4] = {0.0f, -1.0f, 0.0f, 0.0f};	// Spotlight pointing diretion 
-float spotLightDir2[4] = {-3.0f, -2.0f, 1.0f, 0.0f};	// Spotlight 2 pointing diretion
+float buoyLightPos[4] =	 { 10.0f, 5.0f, 10.0f, 1.0f };	// Buoy lights world position
+float buoyLightPos2[4] = { -15.0f, 5.0f, -15.0f, 1.0f };
+float buoyLightPos3[4] = { 5.0f, 6.0f, -5.0f, 1.0f };
+float buoyLightPos4[4] = { -5.0f, 6.0f, 5.0f, 1.0f };
+float buoyLightPos5[4] = { -15.0f, 6.0f, 15.0f, 1.0f };
+float buoyLightPos6[4] = { 15.0f, 6.0f, 15.0f, 1.0f };
 
-float slAngle = 0.9;	// Spotlight angle (0-0.9999)
-float slAngle2 = 0.95;	// Spotlight 2 angle 
+float buoyLightConstantAttenuation = 2.0f;
+float buoyLightLinearAttenuation = 0.5f;
+float buoyLightQuadraticAttenuation = 0.7f;
 
-float slExp = 10.0;		// Spotlight quality
-float slExp2 = 1.0;	// Spotlight 2 quality
+bool isSunActive = 1;
+bool isBuoyLightsActive = 0;
+bool isHeadlightsActive = 0;
 
 //number of objects to be drawn
 int numObj = 0;
@@ -140,7 +159,6 @@ Boat boat;
 
 float deltaT = 0.05f;
 float decayy = 0.1f;
-
 
 // Structure to store data for each shark fin (cone)
 struct SharkFin {
@@ -362,6 +380,16 @@ void renderScene(void) {
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
 
+	float headlightPos[4] = { boat.pos[0], 1.0f, boat.pos[1], 1.0f};			// Boat headlight world position (spotlight)
+	float headlightPos2[4] = { boat.pos[0], 1.0f, 1.0f + boat.pos[1], 1.0f};	// Boat headlight 2 world postion (spotlight)
+
+	float headlightDir[4] = { 1.0f, 0.0f, 0.0f, 0.0f };		// Spotlight pointing diretion 
+	float headlightDir2[4] = { 1.0f, 0.0f, 0.0f, 0.0f };	// Spotlight 2 pointing diretion
+
+	float headlightAngle = 0.9;		// Spotlight angle (0-0.9999)
+
+	float headlightExp = 0.02f;		// Headlights quality
+
 	cams[0].pos[0] = camX + boat.pos[0];
 	cams[0].pos[1] = camY + boat.pos[2];
 	cams[0].pos[2] = camZ + boat.pos[1];
@@ -405,28 +433,58 @@ void renderScene(void) {
 	glUseProgram(shader.getProgramIndex());
 
 
-		float res[4];		// Point light world position
-		float res2[4];		// Spotlight world position 
-		float res3[4];		// Spotlight 2 world position
-		float res4[4];		// Spotlight poiting diretion
-		float res5[4];		// Spotlight 2 poiting diretion
+		float res[4];		// Sun light world position
 
-		multMatrixPoint(VIEW, lightPos, res);		// lightPos definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, spotLightPos, res2);  // spotLightPos definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, spotLightPos2, res3); // spotLightPos2 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, spotLightDir, res4);	// spotLightDir definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, spotLightDir2, res5); // spotLightDir2 definido em World Coord so is converted to eye space
+		float res6[4];		// Buoy light world position
+		float res7[4];		// Buoy light world position
+		float res8[4];		// Buoy light world position
+		float res9[4];		// Buoy light world position
+		float res10[4];		// Buoy light world position
+		float res11[4];		// Buoy light world position
 
-		glUniform4fv(lPos_uniformId, 1, res);
-		glUniform4fv(slPos_uniformId, 1, res2);
-		glUniform4fv(slPos_uniformId2, 1, res3);
-		glUniform4fv(slDir_uniformId, 1, res4);
-		glUniform4fv(slDir_uniformId2, 1, res5);
+		float res2[4];		// Boat headlight world position 
+		float res3[4];		// Boat headlight 2 world position
+		float res4[4];		// Boat headlight diretion
+		float res5[4];		// Boat headlight 2 diretion
 
-		glUniform1f(slAngle_uniformId, slAngle);
-		glUniform1f(slAngle_uniformId2, slAngle2);
-		glUniform1f(slExp_uniformId, slExp);
-		glUniform1f(slExp_uniformId2, slExp2);
+		multMatrixPoint(VIEW, sunLightPos, res);		// sunLightPos definido em World Coord so is converted to eye space
+		
+		multMatrixPoint(VIEW, headlightPos, res2);		// headlightPos definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, headlightPos2, res3);		// headlightPos2 definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, headlightDir, res4);		// headlightDir definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, headlightDir2, res5);		// headlightDir2 definido em World Coord so is converted to eye space
+
+		multMatrixPoint(VIEW, buoyLightPos, res6);		// buoyLightPos definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, buoyLightPos2, res7);		// buoyLightPos2 definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, buoyLightPos3, res8);		// buoyLightPos3 definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, buoyLightPos4, res9);		// buoyLightPos4 definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, buoyLightPos5, res10);	// buoyLightPos5 definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, buoyLightPos6, res11);	// buoyLightPos6 definido em World Coord so is converted to eye space
+
+		glUniform4fv(sunPos_uniformId, 1, res);
+
+		glUniform4fv(buoyPos_uniformId, 1, res6);
+		glUniform4fv(buoyPos2_uniformId, 1, res7);
+		glUniform4fv(buoyPos3_uniformId, 1, res8);
+		glUniform4fv(buoyPos4_uniformId, 1, res9);
+		glUniform4fv(buoyPos5_uniformId, 1, res10);
+		glUniform4fv(buoyPos6_uniformId, 1, res11);
+
+		glUniform1f(buoyConstantAttenuation_unirformId, buoyLightConstantAttenuation);
+		glUniform1f(buoyLinearAttenuation_unirformId, buoyLightLinearAttenuation);
+		glUniform1f(buoyQuadraticAttenuation_unirformId, buoyLightQuadraticAttenuation);
+
+		glUniform4fv(headlightPos_uniformId, 1, res2);
+		glUniform4fv(headlightPos2_uniformId, 1, res3);
+		glUniform4fv(headlightDir_uniformId, 1, res4);
+		glUniform4fv(headlightDir2_uniformId, 1, res5);
+
+		glUniform1f(headlightAngle_uniformId, headlightAngle);
+		glUniform1f(headlightExp_uniformId, headlightExp);
+
+		glUniform1f(isSunActive_uniformId, isSunActive);
+		glUniform1f(isBuoyLightsActive_uniformId, isBuoyLightsActive);
+		glUniform1f(isHeadlightsActive_uniformId, isHeadlightsActive);
 
 		int objId = 0;
 
@@ -618,11 +676,11 @@ void processKeys(unsigned char key, int xx, int yy)
 		glutLeaveMainLoop();
 		break;
 
-	case 'c':
+	case 'p':
 		printf("Camera Spherical Coordinates (%f, %f, %f)\n", alpha, beta, r);
 		break;
 	case 'm': glEnable(GL_MULTISAMPLE); break;
-	case 'n': glDisable(GL_MULTISAMPLE); break;
+	case 'k': glDisable(GL_MULTISAMPLE); break;
 
 		// Follow Cam
 	case '1':
@@ -666,7 +724,15 @@ void processKeys(unsigned char key, int xx, int yy)
 		{
 			speedSwitch = 0;
 		}
-	
+	case 'n':
+		isSunActive = !isSunActive;
+		break;
+	case 'c':
+		isBuoyLightsActive = !isBuoyLightsActive;
+		break;
+	case 'h':
+		isHeadlightsActive = !isHeadlightsActive;
+		break;
 	}
 }
 
@@ -793,17 +859,29 @@ GLuint setupShaders() {
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
 
-	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");		// Point light world position
-	slPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_pos");		// Spotlight world position
-	slPos_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_pos2");	// Spotlight 2 world position
-	slDir_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_dir");		// Spotlight 2 world position
-	slDir_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_dir2");	// Spotlight 2 world position
+	sunPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sun_pos");					// Sun light world position
 
-	slAngle_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_angle");		// Spotlight angle
-	slAngle_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_angle2");	// Spotlight 2 angle
+	buoyPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos");					// Buoy light world position
+	buoyPos2_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos2");				// Buoy2 light world position
+	buoyPos3_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos3");				// Buoy3 light world position
+	buoyPos4_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos4");				// Buoy4 light world position
+	buoyPos5_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos5");				// Buoy5 light world position
+	buoyPos6_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos6");				// Buoy6 light world position
 
-	slExp_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_exp");		// Spotlight exponent
-	slExp_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_exp2");	// Spotlight 2 exponent
+	buoyConstantAttenuation_unirformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_const_att");	// Buoys constant attenuation
+	buoyLinearAttenuation_unirformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_linear_att");	// Buoys linear attenuation
+	buoyQuadraticAttenuation_unirformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_quad_att");	// Buoys quadratic attenuation
+
+	headlightPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "headlight_pos");		// Boat headlight world position
+	headlightPos2_uniformId = glGetUniformLocation(shader.getProgramIndex(), "headlight_pos2");		// Boat headlight 2 world position
+	headlightDir_uniformId = glGetUniformLocation(shader.getProgramIndex(), "headlight_dir");		// Boat headlight diretion
+	headlightDir2_uniformId = glGetUniformLocation(shader.getProgramIndex(), "headlight_dir2");		// Boat headlight 2 diretion
+	headlightAngle_uniformId = glGetUniformLocation(shader.getProgramIndex(), "headlight_angle");	// Boat headlight angle
+	headlightExp_uniformId = glGetUniformLocation(shader.getProgramIndex(), "headlight_exp");		// Boat headlight exponent
+
+	isSunActive_uniformId = glGetUniformLocation(shader.getProgramIndex(), "isSunActive");					// Sun light bool
+	isBuoyLightsActive_uniformId = glGetUniformLocation(shader.getProgramIndex(), "isBuoyLightsActive");	// Buoy lights bool
+	isHeadlightsActive_uniformId = glGetUniformLocation(shader.getProgramIndex(), "isHeadlightsActive");	// Boat headlights bool
 
 	tex_loc = glGetUniformLocation(shader.getProgramIndex(), "texmap");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
