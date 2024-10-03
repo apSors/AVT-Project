@@ -163,6 +163,10 @@ struct SharkFin {
 const int sharkfinNumber = 1;
 SharkFin fins[sharkfinNumber];
 
+const float duration = 30.0f;  // 30 seconds duration
+float elapsedTime = 0.0f;     
+int difficulty = 0;
+
 // Function to generate a random float value between min and max
 float randomFloat(float min, float max) {
 	return min + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (max - min));
@@ -194,9 +198,16 @@ void timer(int value)
 	//boat.pos[1] += boat.speed * sin(boat.direction * 3.14 / 180) * deltaT;
 
 	// Define the radii for the paths (circular or elliptical)
-	float radius_1 = 5.0f;  // Radius for fin 1's path
-	float radius_2 = 7.0f;  // Radius for fin 2's path
 
+	//pass deltaT to seconds
+	float dt = (1 / deltaT) / 1000.0f;
+	elapsedTime += dt;
+
+	// After 30 seconds, set progress to 1
+	if (elapsedTime >= duration) {
+		difficulty = 1;
+	}
+	
 	for (int i = 0; i < sharkfinNumber; i++)
 	{
 		if ((abs(fins[i].pos[0] - fins[i].initialPos[0]) > 5.0f) || ((abs(fins[i].pos[1] - fins[i].initialPos[1])) > 5.0f))
@@ -207,7 +218,6 @@ void timer(int value)
 			fins[i].angle = atan(fins[i].slope);
 			fins[i].pos[0] = fins[i].initialPos[0];
 			fins[i].pos[1] = fins[i].initialPos[1];
-
 		}
 		
 		// Keep the angle between 0 and 360 degrees
@@ -230,7 +240,7 @@ void timer(int value)
 		boat.acceleration -= 3*decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
-	else if ((boat.acceleration <= 0) && (boat.speed > 0))
+	else if ((boat.acceleration < 0) && (boat.speed > 0))
 	{
 		boat.acceleration -= 2*decayy;
 		boat.speed += boat.acceleration * deltaT;
@@ -273,23 +283,23 @@ void timer(int value)
 			//vector that stores boat speed.x, speed.y and speed.z (always 0)
 			float boatdirectionalSpeed[3] = { boat.speed * cos(boat.direction), boat.speed * sin(boat.direction), 0.0f };
 			//vector that stores fin speed.x, speed.y and speed.z (always 0)
-			float findirectionalSpeed[3] = { fins[i].speed * cos(boat.direction), fins[i].speed * sin(boat.direction), 0.0f};
+			float findirectionalSpeed[3] = { fins[i].speed * cos(fins[i].direction), fins[i].speed * sin(fins[i].direction), 0.0f};
 			//relative speed of the collision expressed in a 3d vector
 			float relativeSpeed[3] = { boatdirectionalSpeed[0] - findirectionalSpeed[0], boatdirectionalSpeed[1] - findirectionalSpeed[1], boatdirectionalSpeed[2] - findirectionalSpeed[2] };
 
 			//final speed of the collision considering the direction of the collision
 			float collisionSpeed = dotProduct(relativeSpeed, centerVector);
 			//now that the speed is calculated we must apply it to both objects
-			/*while (isColliding(boat.bb_radius, boat.bb_center, fins[i].bb_radius, fins[i].bb_center))
+			while (isColliding(boat.bb_radius, boat.bb_center, fins[i].bb_radius, fins[i].bb_center))
 			{
 				boat.bb_center[0] += 0.01f * centerVector[0];
 				boat.pos[0] += 0.01f * centerVector[0];
 				boat.bb_center[1] += 0.01f * centerVector[0];
 				boat.pos[1] += 0.01f * centerVector[1];
-			}*/
+			}
 
 			boat.acceleration = 0;
-			boat.speed = collisionSpeed;
+			boat.speed = -collisionSpeed/5;
 			boat.direction = (atan2(centerVector[0], centerVector[2])*180)/3.1415;
 			boat.angle = (atan2(centerVector[0], centerVector[2]) * 180) / 3.1415;
 		}
@@ -572,7 +582,8 @@ void renderScene(void) {
 		// Initial settings for fins' speed and direction:
 		for (int j = 0; j < sharkfinNumber; j++)
 		{
-			fins[j].speed = 30.0f;  // Degrees per second
+			if (difficulty == 0) { fins[j].speed = 30.0f; }
+			else if (difficulty == 1) { fins[j].speed = 60.0f; }
 		}
 
 		// send matrices to OGL
@@ -623,7 +634,7 @@ void renderScene(void) {
 		popMatrix(MODEL);
 		objId++;
 	}
-	for (int i = 0; i < sharkfinNumber; i++)
+	/*for (int i = 0; i < sharkfinNumber; i++)
 	{
 		// send the material
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
@@ -653,7 +664,7 @@ void renderScene(void) {
 
 		popMatrix(MODEL);
 		objId++;
-	}
+	}*/
 	
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
@@ -1063,7 +1074,7 @@ void init()
 	myMeshes.push_back(amesh);
 	numObj++;
 
-	amesh = createSphere(boat.bb_radius, 500);
+	/*amesh = createSphere(boat.bb_radius, 500);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
 	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
@@ -1071,7 +1082,7 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	numObj++;
+	numObj++;*/
 
 	//shark fins
 	for (int i = 0; i < sharkfinNumber; i++)
@@ -1085,7 +1096,7 @@ void init()
 		amesh.mat.texCount = texcount;
 		myMeshes.push_back(amesh);
 	}
-	for (int i = 0; i < sharkfinNumber; i++)
+	/*for (int i = 0; i < sharkfinNumber; i++)
 	{
 		amesh = createSphere(boat.bb_radius, 500);
 		memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
@@ -1095,7 +1106,7 @@ void init()
 		amesh.mat.shininess = shininess;
 		amesh.mat.texCount = texcount;
 		myMeshes.push_back(amesh);
-	}
+	}*/
 
 	/*// create geometry and VAO of the pawn
 	amesh = createPawn();
