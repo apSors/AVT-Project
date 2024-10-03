@@ -23,6 +23,7 @@ uniform float sl_exp2;      // Spotlight 2 quality
 uniform sampler2D texmap;
 uniform sampler2D texmap1;
 uniform sampler2D texmap2;
+
 uniform int texMode;
 
 in Data {
@@ -105,12 +106,17 @@ void main() {
 	// Texture application depending on the mode
 	if(texMode == 0) // modulate diffuse color with texel color
 	{
-		texel = texture(texmap2, DataIn.tex_coord);  // texel from lightwood.tga
+		texel = texture(texmap, DataIn.tex_coord);  // texel from stone.tga
 		finalColor = finalColor * texel; // Apply texture modulation
+	}
+	else if (texMode == 1) // diffuse color is replaced by texel color, with specular and ambient
+	{
+		texel = texture(texmap1, DataIn.tex_coord);  // texel from checker.png
+		finalColor = vec4(mat.ambient.rgb * 0.1, mat.ambient.a) + totalSpecular + texel * totalDiffuse;
 	}
 	else if (texMode == 2) // diffuse color is replaced by texel color, with specular and ambient
 	{
-		texel = texture(texmap, DataIn.tex_coord);  // texel from stone.tga
+		texel = texture(texmap2, DataIn.tex_coord);  // texel from lightwood.tga
 		finalColor = vec4(mat.ambient.rgb * 0.1, mat.ambient.a) + totalSpecular + texel * totalDiffuse;
 	}
 	else // multitexturing
