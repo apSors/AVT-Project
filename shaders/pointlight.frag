@@ -15,10 +15,14 @@ uniform Materials mat;
 
 uniform vec4 sl_dir;
 uniform vec4 sl_dir2;
-uniform float sl_angle;		// Spotlight angle
-uniform float sl_angle2;	// Spotlight 2 angle
-uniform float sl_exp;		// Spotlight quality 
-uniform float sl_exp2;		// Spotlight 2 quality
+uniform float sl_angle;     // Spotlight angle
+uniform float sl_angle2;    // Spotlight 2 angle
+uniform float sl_exp;       // Spotlight quality 
+uniform float sl_exp2;      // Spotlight 2 quality
+uniform sampler2D texmap;
+uniform sampler2D texmap1;
+uniform sampler2D texmap2;
+uniform int texMode;
 
 in Data {
 	vec3 normal;
@@ -26,15 +30,33 @@ in Data {
 	vec3 lightDir;
 	vec3 lightDir2;
 	vec3 lightDir3;
+	vec2 tex_coord;
 } DataIn;
+
+uniform bool depthFog = false;
 
 void main() {
 
+	float dist; // camera to point distance
 	vec4 totalDiffuse = vec4(0.0);
 	vec4 totalSpecular = vec4(0.0);
+	vec4 texel, texel1; 
 
 	vec3 n = normalize(DataIn.normal);
 	vec3 e = normalize(DataIn.eye);
+
+	// Compute distance used in fog equations
+	if(depthFog == false) {
+		// Plane-based fog
+		dist = abs(DataIn.eye.z); // Fragment depth in eye coordinates
+	} else {
+		// Range-based fog
+		dist = length(DataIn.eye); // Distance from camera to fragment
+	}
+
+	// Fog parameters (increased density)
+	float fogAmount = clamp(pow(dist * 0.03, 0.75), 0.0, 1.0);  // Increase density by modifying the exponent and multiplier
+	vec3 fogColor = vec3(0.5, 0.6, 0.7);  // Color of the fog
 
 	// Light 1 - Point light
 	vec3 l1 = normalize(DataIn.lightDir);
@@ -76,6 +98,27 @@ void main() {
 		totalDiffuse += intensity3 * mat.diffuse;
 	}
 
-	// Combine results
-	colorOut = max(totalDiffuse + totalSpecular, mat.ambient);
+	// Combine lighting results without textures yet
+	vec4 finalColor = max(totalDiffuse + totalSpecular, mat.ambient);
+
+	// Texture application depending on the mode
+	if(texMode == 0) // modulate diffuse color with texel color
+	{
+		texel = texture(texmap2, DataIn.tex_coord);  // texel from lightwood.tga
+		finalColor = finalColor * texel; // Apply texture modulation
+	}
+	else if (texMode == 2) // diffuse color is replaced by texel color, with specular and ambient
+	{
+		texel = texture(texmap, DataIn.tex_coord);  // texel from stone.tga
+		finalColor = vec4(mat.ambient.rgb * 0.1, mat.ambient.a) + totalSpecular + texel * totalDiffuse;
+	}
+	else // multitexturing
+	{
+		texel = texture(texmap2, DataIn.tex_coord);  // texel from lightwood.tga
+		texel1 = texture(texmap1, DataIn.tex_coord);  // texel from checker.tga
+		finalColor = totalDiffuse * texel * texel1 + totalSpecular;
+	}
+
+	// Apply fog by blending the final color with the fog color based on fog amount
+	colorOut = vec4(mix(fogColor, finalColor.rgb, 1.0 - fogAmount), finalColor.a);
 }
