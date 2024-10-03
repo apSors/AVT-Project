@@ -19,6 +19,7 @@ uniform float sl_angle;     // Spotlight angle
 uniform float sl_angle2;    // Spotlight 2 angle
 uniform float sl_exp;       // Spotlight quality 
 uniform float sl_exp2;      // Spotlight 2 quality
+
 uniform sampler2D texmap;
 uniform sampler2D texmap1;
 uniform sampler2D texmap2;
@@ -33,7 +34,7 @@ in Data {
 	vec2 tex_coord;
 } DataIn;
 
-uniform bool depthFog = false;
+uniform bool depthFog;
 
 void main() {
 

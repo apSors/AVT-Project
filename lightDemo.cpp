@@ -75,6 +75,8 @@ GLint slAngle_uniformId2;	// Spotlight 2 angle
 GLint slExp_uniformId;		// Spotlight exponent
 GLint slExp_uniformId2;		// Spotlight 2 exponent
 
+GLint depthFog_uniformId;	// Fog controller
+
 GLuint TextureArray[3];
 
 GLint tex_loc, tex_loc1, tex_loc2;
@@ -105,6 +107,8 @@ float slAngle2 = 0.95;	// Spotlight 2 angle
 
 float slExp = 10.0;		// Spotlight quality
 float slExp2 = 1.0;	// Spotlight 2 quality
+
+bool depthFog = 0;
 
 //number of objects to be drawn
 int numObj = 0;
@@ -430,6 +434,8 @@ void renderScene(void) {
 		glUniform1f(slExp_uniformId, slExp);
 		glUniform1f(slExp_uniformId2, slExp2);
 
+		glUniform1f(depthFog_uniformId, depthFog);
+
 		int objId = 0;
 
 		//Associar os Texture Units aos Objects Texture
@@ -686,7 +692,9 @@ void processKeys(unsigned char key, int xx, int yy)
 		{
 			speedSwitch = 0;
 		}
-	
+	case 'f':
+		depthFog = !depthFog;
+		break;
 	}
 }
 
@@ -824,6 +832,8 @@ GLuint setupShaders() {
 
 	slExp_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_exp");		// Spotlight exponent
 	slExp_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_exp2");	// Spotlight 2 exponent
+
+	depthFog_uniformId = glGetUniformLocation(shader.getProgramIndex(), "depthFog");	// Spotlight 2 exponent
 
 	tex_loc = glGetUniformLocation(shader.getProgramIndex(), "texmap");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
