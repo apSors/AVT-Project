@@ -30,6 +30,7 @@ in Data {
 	vec3 lightDir;
 	vec3 lightDir2;
 	vec3 lightDir3;
+	vec2 tex_coord;
 } DataIn;
 
 uniform bool depthFog = false;
@@ -97,31 +98,27 @@ void main() {
 		totalDiffuse += intensity3 * mat.diffuse;
 	}
 
-	// Combine lighting results
+	// Combine lighting results without textures yet
 	vec4 finalColor = max(totalDiffuse + totalSpecular, mat.ambient);
 
-
-	// Apply fog by blending the final color with the fog color based on fog amount
-	colorOut = vec4(mix(fogColor, finalColor.rgb, 0.5 - fogAmount * 0.5), finalColor.a);
-
-	
+	// Texture application depending on the mode
 	if(texMode == 0) // modulate diffuse color with texel color
 	{
-		texel = texture(texmap2, DataIn.tex_coord);  // texel from lighwood.tga
-		colorOut = max(intensity * mat.diffuse * texel + spec,0.07 * texel);
+		texel = texture(texmap2, DataIn.tex_coord);  // texel from lightwood.tga
+		finalColor = finalColor * texel; // Apply texture modulation
 	}
-	else if (texMode == 2) // diffuse color is replaced by texel color, with specular area or ambient (0.1*texel)
+	else if (texMode == 2) // diffuse color is replaced by texel color, with specular and ambient
 	{
 		texel = texture(texmap, DataIn.tex_coord);  // texel from stone.tga
-		colorOut = max(intensity*texel + spec, 0.07*texel);
+		finalColor = vec4(mat.ambient.rgb * 0.1, mat.ambient.a) + totalSpecular + texel * totalDiffuse;
 	}
 	else // multitexturing
 	{
-		texel = texture(texmap2, DataIn.tex_coord);  // texel from lighwood.tga
+		texel = texture(texmap2, DataIn.tex_coord);  // texel from lightwood.tga
 		texel1 = texture(texmap1, DataIn.tex_coord);  // texel from checker.tga
-		colorOut = max(intensity*texel*texel1 + spec, 0.07*texel*texel1);
+		finalColor = totalDiffuse * texel * texel1 + totalSpecular;
 	}
 
-
-	
+	// Apply fog by blending the final color with the fog color based on fog amount
+	colorOut = vec4(mix(fogColor, finalColor.rgb, 1.0 - fogAmount), finalColor.a);
 }
