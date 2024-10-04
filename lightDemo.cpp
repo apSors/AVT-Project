@@ -655,44 +655,52 @@ void renderScene(void) {
 		}
 		//base of 4th house 
 		else if (i == 8) {
+			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, (obstacles[3].center[0] / 2) - 0.5f, (obstacles[3].center[2] / 2) - 0.5f, (obstacles[3].center[1] / 2) - 0.5f);
 		}
 		//roof of 4th house 
 		else if (i == 9) {
+			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, 7.5f, 1.0f, 1.5f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
 		//base of 5th house 
 		else if (i == 10) {
+			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, (obstacles[4].center[0] / 2) - 0.5f, (obstacles[4].center[2] / 2) - 0.5f, (obstacles[4].center[1] / 2) - 0.5f);
 		}
 		//roof of 5th house 
 		else if (i == 11) {
+			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, -4.0f, 1.0f, 1.5f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
 		//base of 6th house 
 		else if (i == 12) {
+			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, (obstacles[5].center[0] / 2) - 0.5f, (obstacles[5].center[2] / 2) - 0.5f, (obstacles[5].center[1] / 2) - 0.5f);
 		}
 		//roof of 6th house 
 		else if (i == 13) {
+			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, -1.0f, 1.0f, 3.5f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
-		//base of 6th house 
+		//base of 7th house 
 		else if (i == 14) {
+			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, (obstacles[6].center[0] / 2) - 0.5f, (obstacles[6].center[2] / 2) - 0.5f, (obstacles[6].center[1] / 2) - 0.5f);
 		}
-		//roof of 6th house 
+		//roof of 7th house 
 		else if (i == 15) {
+			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, -4.0f, 1.0f, 7.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
