@@ -19,6 +19,8 @@ uniform vec4 headlight_pos2;
 in vec4 position;
 in vec4 normal;    //por causa do gerador de geometria
 
+in vec4 texCoord;
+
 out Data {
 	vec3 normal;
 	vec3 eye;
@@ -45,6 +47,7 @@ void main () {
 	DataOut.headlightDir = vec3(headlight_pos - pos);
 	DataOut.headlightDir2 = vec3(headlight_pos2 - pos);
 	DataOut.eye = vec3(-pos);
+	DataOut.tex_coord = texCoord.st;
 
 	gl_Position = m_pvm * position;	
 }
