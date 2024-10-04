@@ -176,6 +176,7 @@ void main() {
 		texel = texture(texmap2, DataIn.tex_coord);  // texel from lightwood.tga
 		texel1 = texture(texmap1, DataIn.tex_coord);  // texel from checker.tga
 		finalColor = totalDiffuse * texel * texel1 + totalSpecular;
+		//finalColor = vec4(max(intensity*mat.diffuse.rgb + totalSpecular.rgb, mat.ambient.rgb), mat.diffuse.a);
 	}
 
 	// Apply fog by blending the final color with the fog color based on fog amount
