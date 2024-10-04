@@ -107,6 +107,17 @@ float slExp2 = 1.0;	// Spotlight 2 quality
 //number of objects to be drawn
 int numObj = 0;
 
+class Obstacle {
+public:
+	float center[3] = { 0.0f, 0.0f, 0.0f };
+	float radius = 0.0f;
+};
+
+// number of obstacles that have bounding boxes
+const int numObstacle = 13;
+
+Obstacle obstacles[numObstacle];
+
 int activeCam = 0;
 
 //variable used to switch speeds using 'o'
@@ -154,9 +165,10 @@ struct SharkFin {
 	float direction = 0.0f;
 	//the slope of the line and initial position used to make the pathing of the fins
 	float slope = 0.0f;
-	float initialPos[3] = { 0.0f, 0.0f, 0.0f};
+	float initialPos[3] = { 0.0f, 0.0f, 0.0f };
+	float targetPos[3] = { 0.0f, 0.0f, 0.0f };
 	// radius and center for the sphere
-	const float bb_radius = 1.0f;
+	const float bb_radius = 0.5f;
 	float bb_center[3] = { 0.0f, 0.0f, 0.0f };
 };
 // Shark fins
@@ -182,6 +194,62 @@ bool isColliding(float radius1, float *center1, float radius2, float *center2) {
 	else { return false; };
 }
 
+void handleCollisionFin(int index)
+{
+	//vector that dictates what direction the objects will go when they collide
+	float centerVector[3] = { boat.bb_center[0] - fins[index].bb_center[0], boat.bb_center[1] - fins[index].bb_center[1], boat.bb_center[2] - fins[index].bb_center[2] };
+	normalize(centerVector);
+
+	//vector that stores boat speed.x, speed.y and speed.z (always 0)
+	float boatdirectionalSpeed[3] = { boat.speed * cos(boat.direction), boat.speed * sin(boat.direction), 0.0f };
+	//vector that stores fin speed.x, speed.y and speed.z (always 0)
+	float findirectionalSpeed[3] = { fins[index].speed * cos(fins[index].angle), fins[index].speed * sin(fins[index].angle), 0.0f };
+	//relative speed of the collision expressed in a 3d vector
+	float relativeSpeed[3] = { boatdirectionalSpeed[0] - findirectionalSpeed[0], boatdirectionalSpeed[1] - findirectionalSpeed[1], boatdirectionalSpeed[2] - findirectionalSpeed[2] };
+
+	//final speed of the collision considering the direction of the collision
+	float collisionSpeed = dotProduct(relativeSpeed, centerVector);
+	//now that the speed is calculated we must apply it to both objects
+	while (isColliding(boat.bb_radius, boat.bb_center, fins[index].bb_radius, fins[index].bb_center))
+	{
+		boat.bb_center[0] += 0.01f * centerVector[0];
+		boat.pos[0] += 0.01f * centerVector[0];
+		boat.bb_center[1] += 0.01f * centerVector[0];
+		boat.pos[1] += 0.01f * centerVector[1];
+	}
+
+	boat.acceleration = -5.0f;
+	boat.speed = -collisionSpeed / 5;
+	//boat.direction = (atan2(centerVector[0], centerVector[2])*180)/3.1415;
+	//boat.angle = (atan2(centerVector[0], centerVector[2]) * 180) / 3.1415;
+}
+
+void handleCollisionStatic(int index)
+{
+	//vector that dictates what direction the objects will go when they collide
+	float centerVector[3] = { boat.bb_center[0] - obstacles[index].center[0], boat.bb_center[1] - obstacles[index].center[1], boat.bb_center[2] - obstacles[index].center[2] };
+	normalize(centerVector);
+	
+	//relative speed of the collision expressed in a 3d vector
+	float relativeSpeed[3] = { boat.speed * cos(boat.direction), boat.speed * sin(boat.direction), 0.0f };
+
+	//final speed of the collision considering the direction of the collision
+	float collisionSpeed = dotProduct(relativeSpeed, centerVector);
+	//now that the speed is calculated we must apply it to both objects
+	while (isColliding(boat.bb_radius, boat.bb_center, obstacles[index].radius, obstacles[index].center))
+	{
+		boat.bb_center[0] += 0.01f * centerVector[0];
+		boat.pos[0] += 0.01f * centerVector[0];
+		boat.bb_center[1] += 0.01f * centerVector[0];
+		boat.pos[1] += 0.01f * centerVector[1];
+	}
+
+	boat.acceleration = -5.0f;
+	boat.speed = -collisionSpeed / 5;
+	//boat.direction = (atan2(centerVector[0], centerVector[2])*180)/3.1415;
+	//boat.angle = (atan2(centerVector[0], centerVector[2]) * 180) / 3.1415;
+}
+
 void timer(int value)
 {
 	std::ostringstream oss;
@@ -195,10 +263,6 @@ void timer(int value)
 	boat.pos[0] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * cos(boat.direction * 3.14 / 180);
 	boat.pos[1] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * sin(boat.direction * 3.14 / 180);
 	
-	//boat.pos[1] += boat.speed * sin(boat.direction * 3.14 / 180) * deltaT;
-
-	// Define the radii for the paths (circular or elliptical)
-
 	//pass deltaT to seconds
 	float dt = (1 / deltaT) / 1000.0f;
 	elapsedTime += dt;
@@ -210,24 +274,38 @@ void timer(int value)
 	
 	for (int i = 0; i < sharkfinNumber; i++)
 	{
-		if ((abs(fins[i].pos[0] - fins[i].initialPos[0]) > 5.0f) || ((abs(fins[i].pos[1] - fins[i].initialPos[1])) > 5.0f))
+		if ((abs(fins[i].pos[0] - fins[i].initialPos[0]) > 10.0f) || ((abs(fins[i].pos[1] - fins[i].initialPos[1])) > 10.0f))
 		{
-			fins[i].initialPos[0] = (float)(5.0 * cos(rand())) + boat.pos[0];
-			fins[i].initialPos[1] = (float)(5.0 * sin(rand())) + boat.pos[1];
+			fins[i].initialPos[0] = (float)(10.0 * cos(rand())) + boat.pos[0];
+			fins[i].initialPos[1] = (float)(10.0 * sin(rand())) + boat.pos[1];
+			fins[i].targetPos[0] = boat.pos[0];
+			fins[i].targetPos[1] = boat.pos[1];
 			fins[i].slope = ((fins[i].initialPos[1] - boat.pos[1]) / (fins[i].initialPos[0] - boat.pos[0]));
+			fins[i].slope = fins[i].slope / abs(fins[i].slope);
 			fins[i].angle = atan(fins[i].slope);
 			fins[i].pos[0] = fins[i].initialPos[0];
 			fins[i].pos[1] = fins[i].initialPos[1];
+			fins[i].direction = -(180/3.1415) * atan2(boat.pos[1] - fins[i].pos[1], boat.pos[0] - fins[i].pos[0]);
 		}
 		
+
 		// Keep the angle between 0 and 360 degrees
 		if (fins[i].angle > 3.14) { fins[i].angle -= 3.14f; }
 		else if (fins[i].angle < -3.14f) { fins[i].angle += 3.14f; }
 
 		//fins movement logic
 		// we want them to move in a straight line, starting at their spawn point moving towards the boat position
-		fins[i].pos[0] += (fins[i].slope * deltaT) * cos(fins[i].angle);  // X position
-		fins[i].pos[1] += (fins[i].slope * deltaT) * sin(fins[i].angle);  // Y position
+		if (fins[i].initialPos[0] < fins[i].targetPos[0])
+		{
+			fins[i].pos[0] += -(fins[i].slope * deltaT) * cos(fins[i].angle);  // X position
+			fins[i].pos[1] += -(fins[i].slope * deltaT) * sin(fins[i].angle);  // Y position
+		}
+		else
+		{
+			fins[i].pos[0] += (fins[i].slope * deltaT) * cos(fins[i].angle);  // X position
+			fins[i].pos[1] += (fins[i].slope * deltaT) * sin(fins[i].angle);  // Y position
+		}
+		
 
 		fins[i].bb_center[0] = fins[i].pos[0];
 		fins[i].bb_center[1] = fins[i].pos[1];
@@ -250,6 +328,7 @@ void timer(int value)
 			boat.speed = 0;
 		}
 	}
+	
 
 	//boat moving backwards (press 's')
 	if ((boat.acceleration < 0) && (boat.speed <= 0))
@@ -276,34 +355,18 @@ void timer(int value)
 	{
 		if (isColliding(boat.bb_radius, boat.bb_center, fins[i].bb_radius, fins[i].bb_center))
 		{
-			//vector that dictates what direction the objects will go when they collide
-			float centerVector[3] = { boat.bb_center[0] - fins[i].bb_center[0], boat.bb_center[1] - fins[i].bb_center[1], boat.bb_center[2] - fins[i].bb_center[2] };
-			normalize(centerVector);
-			
-			//vector that stores boat speed.x, speed.y and speed.z (always 0)
-			float boatdirectionalSpeed[3] = { boat.speed * cos(boat.direction), boat.speed * sin(boat.direction), 0.0f };
-			//vector that stores fin speed.x, speed.y and speed.z (always 0)
-			float findirectionalSpeed[3] = { fins[i].speed * cos(fins[i].direction), fins[i].speed * sin(fins[i].direction), 0.0f};
-			//relative speed of the collision expressed in a 3d vector
-			float relativeSpeed[3] = { boatdirectionalSpeed[0] - findirectionalSpeed[0], boatdirectionalSpeed[1] - findirectionalSpeed[1], boatdirectionalSpeed[2] - findirectionalSpeed[2] };
-
-			//final speed of the collision considering the direction of the collision
-			float collisionSpeed = dotProduct(relativeSpeed, centerVector);
-			//now that the speed is calculated we must apply it to both objects
-			while (isColliding(boat.bb_radius, boat.bb_center, fins[i].bb_radius, fins[i].bb_center))
-			{
-				boat.bb_center[0] += 0.01f * centerVector[0];
-				boat.pos[0] += 0.01f * centerVector[0];
-				boat.bb_center[1] += 0.01f * centerVector[0];
-				boat.pos[1] += 0.01f * centerVector[1];
-			}
-
-			boat.acceleration = 0;
-			boat.speed = -collisionSpeed/5;
-			boat.direction = (atan2(centerVector[0], centerVector[2])*180)/3.1415;
-			boat.angle = (atan2(centerVector[0], centerVector[2]) * 180) / 3.1415;
+			handleCollisionFin(i);
 		}
 	}
+	//check for collision in static objects
+	for (int i = 0; i < numObstacle; i++)
+	{
+		if (isColliding(boat.bb_radius, boat.bb_center, obstacles[i].radius, obstacles[i].center))
+		{
+			handleCollisionStatic(i);
+		}
+	}
+
 
 	//handle boat angle incremental increase, to make the rotation animation
 	if ((boat.angle - boat.direction) > 0)
@@ -513,7 +576,7 @@ void renderScene(void) {
 		// boat
 		if (i == 1)
 		{
-			translate(MODEL, boat.pos[0] - 0.0f, boat.pos[2], boat.pos[1] - 0.0f);
+			translate(MODEL, boat.pos[0] + 0.0f, boat.pos[2], boat.pos[1] + 0.0f);
 			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
 		}
 		if (i == 0) { 
@@ -522,7 +585,7 @@ void renderScene(void) {
 		//base of 1st house 
 		else if (i == 2) {
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, 4.5f, 0.0f, 4.5);
+			translate(MODEL, (obstacles[0].center[0]/2) - 0.5f, (obstacles[0].center[2] / 2) - 0.5f, (obstacles[0].center[1] / 2) - 0.5f);
 		}
 		//roof of 1st house
 		else if (i == 3) {
@@ -534,7 +597,7 @@ void renderScene(void) {
 		//base of 2nd house 
 		else if (i == 4) {
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, 4.5f, 0.0f, -1.5f);
+			translate(MODEL, (obstacles[1].center[0] / 2) - 0.5f, (obstacles[1].center[2] / 2) - 0.5f, (obstacles[1].center[1] / 2) - 0.5f);
 		}
 		//roof of 2nd house 
 		else if (i == 5) {
@@ -545,7 +608,7 @@ void renderScene(void) {
 		//base of 3rd house 
 		else if (i == 6) {
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, -4.5f, 0.0f, -1.5f);
+			translate(MODEL, (obstacles[2].center[0] / 2) - 0.5f, (obstacles[2].center[2] / 2) - 0.5f, (obstacles[2].center[1] / 2) - 0.5f);
 		}
 		//roof of 3rd house 
 		else if (i == 7) {
@@ -553,23 +616,91 @@ void renderScene(void) {
 			translate(MODEL, -4.0f, 1.0f, -1.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
-		//handle of the paddle
+		//base of 4th house 
 		else if (i == 8) {
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, (obstacles[3].center[0] / 2) - 0.5f, (obstacles[3].center[2] / 2) - 0.5f, (obstacles[3].center[1] / 2) - 0.5f);
+		}
+		//roof of 4th house 
+		else if (i == 9) {
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, 7.5f, 1.0f, 1.5f);
+			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+		}
+		//base of 5th house 
+		else if (i == 10) {
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, (obstacles[4].center[0] / 2) - 0.5f, (obstacles[4].center[2] / 2) - 0.5f, (obstacles[4].center[1] / 2) - 0.5f);
+		}
+		//roof of 5th house 
+		else if (i == 11) {
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, -4.0f, 1.0f, 1.5f);
+			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+		}
+		//base of 6th house 
+		else if (i == 12) {
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, (obstacles[5].center[0] / 2) - 0.5f, (obstacles[5].center[2] / 2) - 0.5f, (obstacles[5].center[1] / 2) - 0.5f);
+		}
+		//roof of 6th house 
+		else if (i == 13) {
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, -1.0f, 1.0f, 3.5f);
+			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+		}
+		//base of 6th house 
+		else if (i == 14) {
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, (obstacles[6].center[0] / 2) - 0.5f, (obstacles[6].center[2] / 2) - 0.5f, (obstacles[6].center[1] / 2) - 0.5f);
+		}
+		//roof of 6th house 
+		else if (i == 15) {
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, -4.0f, 1.0f, 7.0f);
+			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+		}
+		//1st buoy 
+		else if (i == 16) {
+			translate(MODEL, (obstacles[7].center[0] / 1) - 0.0f, (obstacles[7].center[2] / 1) - 1.0f, (obstacles[7].center[1] / 1) - 0.0f);
+		}
+		//2nd buoy 
+		else if (i == 17) {
+			translate(MODEL, (obstacles[8].center[0] / 1) - 0.0f, (obstacles[8].center[2] / 1) - 1.0f, (obstacles[8].center[1] / 1) - 0.0f);
+		}
+		//3rd buoy 
+		else if (i == 18) {
+			translate(MODEL, (obstacles[9].center[0] / 1) - 0.0f, (obstacles[9].center[2] / 1) - 1.0f, (obstacles[9].center[1] / 1) - 0.0f);
+		}
+		//4th buoy 
+		else if (i == 19) {
+			translate(MODEL, (obstacles[10].center[0] / 1) - 0.0f, (obstacles[10].center[2] / 1) - 1.0f, (obstacles[10].center[1] / 1) - 0.0f);
+		}
+		//5th buoy 
+		else if (i == 20) {
+			translate(MODEL, (obstacles[11].center[0] / 1) - 0.0f, (obstacles[11].center[2] / 1) - 1.0f, (obstacles[11].center[1] / 1) - 0.0f);
+		}
+		//6th buoy 
+		else if (i == 21) {
+			translate(MODEL, (obstacles[12].center[0] / 1) - 0.0f, (obstacles[12].center[2] / 1) - 1.0f, (obstacles[12].center[1] / 1) - 0.0f);
+			}
+		//handle of the paddle
+		else if (i == 22) {
 			translate(MODEL, 0.5f, 1.2f, 0.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//head1 of the paddle
-		else if (i == 9) {
+		else if (i == 23) {
 			translate(MODEL, -0.4f, 1.2f, 0.0f);
 			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//head2 of the paddle
-		else if (i == 10) {
+		else if (i == 24) {
 			translate(MODEL, 1.4f, 1.2f, 0.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//ball
-		else if (i == 11) {
+		else if (i == 19) {
 			//translate(MODEL, 0.5f, 0.5f, 0.5f);
 			translate(MODEL, boat.bb_center[0], boat.bb_center[2], boat.bb_center[1]);
 			
@@ -616,8 +747,8 @@ void renderScene(void) {
 		glUniform1f(loc, myMeshes[objId].mat.shininess);
 		pushMatrix(MODEL);
 
-		translate(MODEL, fins[i].pos[0], fins[i].pos[2], fins[i].pos[1]); // Adjust for fin's position
-		//rotate(MODEL, -fins[i].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
+		translate(MODEL, fins[i].pos[0], fins[i].pos[2], fins[i].pos[1]); // Adjust for fin's position6
+		rotate(MODEL, fins[i].direction, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
 
 		// send matrices to OGL
 		computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -634,7 +765,7 @@ void renderScene(void) {
 		popMatrix(MODEL);
 		objId++;
 	}
-	/*for (int i = 0; i < sharkfinNumber; i++)
+	/*for (int i = 0; i < numObstacle; i++)
 	{
 		// send the material
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
@@ -647,7 +778,7 @@ void renderScene(void) {
 		glUniform1f(loc, myMeshes[objId].mat.shininess);
 		pushMatrix(MODEL);
 		
-		translate(MODEL, fins[i].pos[0], fins[i].pos[2], fins[i].pos[1]); // Adjust for fin's position
+		//translate(MODEL, obstacles[i].center[0], obstacles[i].center[2], obstacles[i].center[1]); // Adjust for fin's position
 		//rotate(MODEL, -fins[i].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
 
 		// send matrices to OGL
@@ -950,7 +1081,7 @@ void init()
 	int texcount = 0;
 
 	//create the water quad
-	amesh = createQuad(100.0f, 100.0f);
+	amesh = createQuad(100000.0f, 100000.0f);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
 	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
@@ -977,7 +1108,7 @@ void init()
 	numObj++;
 
 	//lets try making a house
-	//base of the house
+	//base of the house 1
 	amesh = createCube();
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -987,7 +1118,7 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	numObj++;
-	//roof of the house
+	//roof of the house 1
 	amesh = createCone(0.5, 1.0, 4);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -997,9 +1128,13 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	numObj++;
+	obstacles[0].center[0] = 9.0f + 1.0f;
+	obstacles[0].center[1] = 9.0f + 1.0f;
+	obstacles[0].center[2] = 0.0f + 1.0f;
+	obstacles[0].radius = 1.0f; //sqrt(0.75 * 4);
 
 	//antoher one
-	//base of the house
+	//base of the house 2
 	amesh = createCube();
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -1009,7 +1144,7 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	numObj++;
-	//roof of the house
+	//roof of the house 2
 	amesh = createCone(0.5, 1.0, 4);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -1019,9 +1154,13 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	numObj++;
+	obstacles[1].center[0] = 9.0f + 1.0f;
+	obstacles[1].center[1] = -3.0f + 1.0f;
+	obstacles[1].center[2] = 0.0f + 1.0f;
+	obstacles[1].radius = 1.0f; //sqrt(0.75 * 4);
 
 	//and antoher one
-	//base of the house
+	//base of the house 3
 	amesh = createCube();
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -1031,7 +1170,7 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	numObj++;
-	//roof of the house
+	//roof of the house 3
 	amesh = createCone(0.5, 1.0, 4);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -1041,6 +1180,201 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	numObj++;
+	obstacles[2].center[0] = -9.0f + 1.0f;
+	obstacles[2].center[1] = -3.0f + 1.0f;
+	obstacles[2].center[2] = 0.0f + 1.0f;
+	obstacles[2].radius = 1.0f; //sqrt(0.75 * 4);
+
+	//and antoher one
+	//base of the house 4
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//roof of the house 4
+	amesh = createCone(0.5, 1.0, 4);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[3].center[0] = 14.0f + 1.0f;
+	obstacles[3].center[1] = 2.0f + 1.0f;
+	obstacles[3].center[2] = 0.0f + 1.0f;
+	obstacles[3].radius = 1.0f; //sqrt(0.75 * 4);
+
+	//and antoher one
+	//base of the house 5
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//roof of the house 5
+	amesh = createCone(0.5, 1.0, 4);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[4].center[0] = -9.0f + 1.0f;
+	obstacles[4].center[1] = 2.0f + 1.0f;
+	obstacles[4].center[2] = 0.0f + 1.0f;
+	obstacles[4].radius = 1.0f; //sqrt(0.75 * 4);
+
+	//and antoher one
+	//base of the house 6
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//roof of the house 6
+	amesh = createCone(0.5, 1.0, 4);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[5].center[0] = -3.0f + 1.0f;
+	obstacles[5].center[1] = 6.0f + 1.0f;
+	obstacles[5].center[2] = 0.0f + 1.0f;
+	obstacles[5].radius = 1.0f; //sqrt(0.75 * 4);
+
+	//and antoher one
+	//base of the house 7
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//roof of the house 7
+	amesh = createCone(0.5, 1.0, 4);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[6].center[0] = -9.0f + 1.0f;
+	obstacles[6].center[1] = 13.0f + 1.0f;
+	obstacles[6].center[2] = 0.0f + 1.0f;
+	obstacles[6].radius = 1.0f; //sqrt(0.75 * 4);
+
+	//lets make the buoys
+	//buoy 1
+	amesh = createCone(3.0, 0.3, 100);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[7].center[0] = 7.0f;
+	obstacles[7].center[1] = -5.0f;
+	obstacles[7].center[2] = 0.0f + 1.0f;
+	obstacles[7].radius = 0.2f;
+	//buoy 2
+	amesh = createCone(3.0, 0.3, 100);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[8].center[0] = 3.0f;
+	obstacles[8].center[1] = 13.0f;
+	obstacles[8].center[2] = 0.0f + 1.0f;
+	obstacles[8].radius = 0.2f;
+	//buoy 3
+	amesh = createCone(3.0, 0.3, 100);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[9].center[0] = -8.0f;
+	obstacles[9].center[1] = -6.0f;
+	obstacles[9].center[2] = 0.0f + 1.0f;
+	obstacles[9].radius = 0.2f;
+	//buoy 4
+	amesh = createCone(3.0, 0.3, 100);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[10].center[0] = 20.0f;
+	obstacles[10].center[1] = 13.0f;
+	obstacles[10].center[2] = 0.0f + 1.0f;
+	obstacles[10].radius = 0.2f;
+	//buoy 5
+	amesh = createCone(3.0, 0.3, 100);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[11].center[0] = 19.0f;
+	obstacles[11].center[1] = 18.0f;
+	obstacles[11].center[2] = 0.0f + 1.0f;
+	obstacles[11].radius = 0.2f;
+	//buoy 6
+	amesh = createCone(3.0, 0.3, 100);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[12].center[0] = 15.0f;
+	obstacles[12].center[1] = 20.0f;
+	obstacles[12].center[2] = 0.0f + 1.0f;
+	obstacles[12].radius = 0.2f;
+
 
 	//lets do the paddle for the boat
 	//handle
@@ -1087,7 +1421,7 @@ void init()
 	//shark fins
 	for (int i = 0; i < sharkfinNumber; i++)
 	{
-		amesh = createCone(1, 1, 3);
+		amesh = createCone(1, 0.5, 3);
 		memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
 		memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
 		memcpy(amesh.mat.specular, spec, 10 * sizeof(float));
@@ -1096,9 +1430,9 @@ void init()
 		amesh.mat.texCount = texcount;
 		myMeshes.push_back(amesh);
 	}
-	/*for (int i = 0; i < sharkfinNumber; i++)
+	/*for (int i = 0; i < numObstacle; i++)
 	{
-		amesh = createSphere(boat.bb_radius, 500);
+		amesh = createSphere(obstacles[i].radius, 500);
 		memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 		memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
 		memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
