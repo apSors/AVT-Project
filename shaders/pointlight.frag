@@ -13,27 +13,51 @@ struct Materials {
 
 uniform Materials mat;
 
+uniform vec4 headlight_dir;			// Boat headlight diretion
+uniform vec4 headlight_dir2;		// Boat headlight 2 diretion
+uniform float headlight_angle;		// Boat headlight angle
+uniform float headlight_exp;		// Boat headlight quality 
+
+uniform float buoy_const_att;
+uniform float buoy_linear_att;
+uniform float buoy_quad_att;
+
+uniform bool isSunActive;
+uniform bool isBuoyLightsActive;
+uniform bool isHeadlightsActive;
+
 uniform vec4 sl_dir;
 uniform vec4 sl_dir2;
 uniform float sl_angle;     // Spotlight angle
 uniform float sl_angle2;    // Spotlight 2 angle
 uniform float sl_exp;       // Spotlight quality 
 uniform float sl_exp2;      // Spotlight 2 quality
+
 uniform sampler2D texmap;
 uniform sampler2D texmap1;
 uniform sampler2D texmap2;
+
+uniform bool depthFog;
 uniform int texMode;
 
 in Data {
 	vec3 normal;
 	vec3 eye;
-	vec3 lightDir;
-	vec3 lightDir2;
-	vec3 lightDir3;
+	vec3 sunLightDir;
+	vec3 buoyLightDir[6];
+	vec3 headlightDir;
+	vec3 headlightDir2;
 	vec2 tex_coord;
 } DataIn;
 
-uniform bool depthFog = false;
+vec3 l;				// normalized light direction
+vec3 h;				// half vector
+float intensity;
+float distance;		
+float intSpec;		// specular component
+float attenuation;
+float spotEffect;
+vec3 sd;
 
 void main() {
 
@@ -58,44 +82,74 @@ void main() {
 	float fogAmount = clamp(pow(dist * 0.03, 0.75), 0.0, 1.0);  // Increase density by modifying the exponent and multiplier
 	vec3 fogColor = vec3(0.5, 0.6, 0.7);  // Color of the fog
 
-	// Light 1 - Point light
-	vec3 l1 = normalize(DataIn.lightDir);
-	float intensity = max(dot(n, l1), 0.0);
-	if (intensity > 0.0) {
-		vec3 h1 = normalize(l1 + e);
-		float intSpec = max(dot(h1, n), 0.0);
-		totalSpecular += mat.specular * pow(intSpec, mat.shininess);
-	}
-	totalDiffuse += intensity * mat.diffuse;
+	// Light 1 - Sun light (Directional)
+	if( isSunActive == true ){
+		l = normalize(DataIn.sunLightDir);  
+		intensity = max(dot(n, l), 0.0);	
 
-	// Light 2 - Spotlight
-	vec3 l2 = normalize(DataIn.lightDir2);
-	vec3 sd = normalize(vec3(-sl_dir));
-	float spotEffect = dot(l2, sd);  // Angle between spotlight direction and light direction
-	if (spotEffect > sl_angle) {
-		float attenuation = pow(spotEffect, sl_exp);  // Spot attenuation
-		float intensity2 = max(dot(n, l2), 0.0) * attenuation;
-		if (intensity2 > 0.0) {
-			vec3 h2 = normalize(l2 + e);
-			float intSpec2 = max(dot(h2, n), 0.0);
-			totalSpecular += mat.specular * pow(intSpec2, mat.shininess) * attenuation;
+		if (intensity > 0.0) {
+			h = normalize(l + e);					
+			intSpec = max(dot(h, n), 0.0);	
+			totalSpecular += mat.specular * pow(intSpec, mat.shininess); 
 		}
-		totalDiffuse += intensity2 * mat.diffuse;
+		totalDiffuse += intensity * mat.diffuse;  
 	}
+	
 
-	// Light 3 - Spotlight 2
-	vec3 l3 = normalize(DataIn.lightDir3);
-	vec3 sd2 = normalize(vec3(-sl_dir2));
-	float spotEffect2 = dot(l3, sd2);  // Angle between spotlight direction and light direction
-	if (spotEffect2 > sl_angle2) {
-		float attenuation2 = pow(spotEffect2, sl_exp2);  // Spot attenuation
-		float intensity3 = max(dot(n, l3), 0.0) * attenuation2;
-		if (intensity3 > 0.0) {
-			vec3 h3 = normalize(l3 + e);
-			float intSpec3 = max(dot(h3, n), 0.0);
-			totalSpecular += mat.specular * pow(intSpec3, mat.shininess) * attenuation2;
+
+	// Buoy lights (Point)
+	if( isBuoyLightsActive == true ){
+		for(int i = 0; i < DataIn.buoyLightDir.length; i++){
+			l = normalize(DataIn.buoyLightDir[i]);				 
+			distance = length(DataIn.buoyLightDir[i]);			
+			attenuation = 1.0 / (buoy_const_att + buoy_linear_att * distance + buoy_quad_att * distance * distance);
+			intensity = max(dot(n, l), 0.0) * attenuation;
+
+			if (intensity > 0.0) {
+				h = normalize(l + e);
+				intSpec = max(dot(h, n), 0.0);
+				totalSpecular += mat.specular * pow(intSpec, mat.shininess) * attenuation;
+			}
+			totalDiffuse += intensity * mat.diffuse;
 		}
-		totalDiffuse += intensity3 * mat.diffuse;
+	}
+	
+
+
+	// Boat headlight (Spotlight)
+	if( isHeadlightsActive == true ){
+		l = normalize(DataIn.headlightDir);
+		sd = normalize(vec3(-headlight_dir));
+		spotEffect = dot(l, sd);	// Angle between spotlight direction and light direction
+
+		if (spotEffect > headlight_angle) {
+			attenuation = pow(spotEffect, headlight_exp); 
+			intensity = max(dot(n, l), 0.0) * attenuation;
+
+			if (intensity > 0.0) {
+				h = normalize(l + e);
+				intSpec = max(dot(h, n), 0.0);
+				totalSpecular += mat.specular * pow(intSpec, mat.shininess) * attenuation;
+			}
+			totalDiffuse += intensity * mat.diffuse;
+		}
+
+		// Boat headlight 2 (Spotlight)
+		l = normalize(DataIn.headlightDir2);
+		sd = normalize(vec3(-headlight_dir2));
+		spotEffect = dot(l, sd);  
+
+		if (spotEffect > headlight_angle) {
+			attenuation = pow(spotEffect, headlight_exp);  
+			intensity = max(dot(n, l), 0.0) * attenuation;
+
+			if (intensity > 0.0) {
+				h = normalize(l + e);
+				intSpec = max(dot(h, n), 0.0);
+				totalSpecular += mat.specular * pow(intSpec, mat.shininess) * attenuation;
+			}
+			totalDiffuse += intensity * mat.diffuse;
+		}
 	}
 
 	// Combine lighting results without textures yet
@@ -104,12 +158,17 @@ void main() {
 	// Texture application depending on the mode
 	if(texMode == 0) // modulate diffuse color with texel color
 	{
-		texel = texture(texmap2, DataIn.tex_coord);  // texel from lightwood.tga
+		texel = texture(texmap, DataIn.tex_coord);  // texel from stone.tga
 		finalColor = finalColor * texel; // Apply texture modulation
+	}
+	else if (texMode == 1) // diffuse color is replaced by texel color, with specular and ambient
+	{
+		texel = texture(texmap1, DataIn.tex_coord);  // texel from checker.png
+		finalColor = vec4(mat.ambient.rgb * 0.1, mat.ambient.a) + totalSpecular + texel * totalDiffuse;
 	}
 	else if (texMode == 2) // diffuse color is replaced by texel color, with specular and ambient
 	{
-		texel = texture(texmap, DataIn.tex_coord);  // texel from stone.tga
+		texel = texture(texmap2, DataIn.tex_coord);  // texel from lightwood.tga
 		finalColor = vec4(mat.ambient.rgb * 0.1, mat.ambient.a) + totalSpecular + texel * totalDiffuse;
 	}
 	else // multitexturing
@@ -117,6 +176,7 @@ void main() {
 		texel = texture(texmap2, DataIn.tex_coord);  // texel from lightwood.tga
 		texel1 = texture(texmap1, DataIn.tex_coord);  // texel from checker.tga
 		finalColor = totalDiffuse * texel * texel1 + totalSpecular;
+		//finalColor = vec4(max(intensity*mat.diffuse.rgb + totalSpecular.rgb, mat.ambient.rgb), mat.diffuse.a);
 	}
 
 	// Apply fog by blending the final color with the fog color based on fog amount

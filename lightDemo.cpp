@@ -65,19 +65,37 @@ extern float mNormal3x3[9];
 GLint pvm_uniformId;
 GLint vm_uniformId;
 GLint normal_uniformId;
-GLint lPos_uniformId;		// Point light
-GLint slPos_uniformId;		// Spotlight world position
-GLint slPos_uniformId2;		// Spotlight 2 world position
-GLint slDir_uniformId;		// Spotlight pointing diretion
-GLint slDir_uniformId2;		// Spotlight 2 world position
-GLint slAngle_uniformId;	// Spotlight angle
-GLint slAngle_uniformId2;	// Spotlight 2 angle
-GLint slExp_uniformId;		// Spotlight exponent
-GLint slExp_uniformId2;		// Spotlight 2 exponent
+
+GLint sunPos_uniformId;				// Sun light world position
+
+GLint buoyPos_uniformId;			// Buoy light world position
+GLint buoyPos2_uniformId;			// Buoy 2 light world position
+GLint buoyPos3_uniformId;			// Buoy 3 light world position
+GLint buoyPos4_uniformId;			// Buoy 4 light world position
+GLint buoyPos5_uniformId;			// Buoy 5 light world position
+GLint buoyPos6_uniformId;			// Buoy 6 light world position
+
+GLint buoyConstantAttenuation_unirformId; 
+GLint buoyLinearAttenuation_unirformId;
+GLint buoyQuadraticAttenuation_unirformId;
+
+GLint headlightPos_uniformId;		// Boat headlight world position
+GLint headlightPos2_uniformId;		// Boat headlight 2 world position
+GLint headlightDir_uniformId;		// Boat headlight pointing diretion
+GLint headlightDir2_uniformId;		// Boat headlight 2 world position
+GLint headlightAngle_uniformId;		// Boat headlight angle
+GLint headlightExp_uniformId;		// Boat headlight exponent
+
+GLint isSunActive_uniformId;
+GLint isBuoyLightsActive_uniformId;
+GLint isHeadlightsActive_uniformId;
+
+GLint depthFog_uniformId;	// Fog controller
 
 GLuint TextureArray[3];
 
 GLint tex_loc, tex_loc1, tex_loc2;
+GLint texMode_uniformId;
 
 // Camera Position
 float camX, camY, camZ;
@@ -92,22 +110,39 @@ float r = 10.0f;
 // Frame counting and FPS computation
 long myTime, timebase = 0, frame = 0;
 char s[32];
-float lightPos[4] = {10.0f, 6.0f, 10.0f, 1.0f};			// Point light world position
 
-float spotLightPos[4] = {0.0f, 3.0f, 0.0f, 1.0f};		// Spotlight world position
-float spotLightPos2[4] = {-3.0f, 4.0f, -4.0f, 1.0f};	// Spotlight 2 world postion
+float sunLightPos[4] = {-5.0f, 5.0f, 15.0f, 1.0f};		// Sun light world position
 
-float spotLightDir[4] = {0.0f, -1.0f, 0.0f, 0.0f};	// Spotlight pointing diretion 
-float spotLightDir2[4] = {-3.0f, -2.0f, 1.0f, 0.0f};	// Spotlight 2 pointing diretion
+float buoyLightPos[4] =	 { 10.0f, 5.0f, 10.0f, 1.0f };	// Buoy lights world position
+float buoyLightPos2[4] = { -15.0f, 5.0f, -15.0f, 1.0f };
+float buoyLightPos3[4] = { 5.0f, 6.0f, -5.0f, 1.0f };
+float buoyLightPos4[4] = { -5.0f, 6.0f, 5.0f, 1.0f };
+float buoyLightPos5[4] = { -15.0f, 6.0f, 15.0f, 1.0f };
+float buoyLightPos6[4] = { 15.0f, 6.0f, 15.0f, 1.0f };
 
-float slAngle = 0.9;	// Spotlight angle (0-0.9999)
-float slAngle2 = 0.95;	// Spotlight 2 angle 
+float buoyLightConstantAttenuation = 2.0f;
+float buoyLightLinearAttenuation = 0.5f;
+float buoyLightQuadraticAttenuation = 0.7f;
 
-float slExp = 10.0;		// Spotlight quality
-float slExp2 = 1.0;	// Spotlight 2 quality
+bool isSunActive = 1;
+bool isBuoyLightsActive = 0;
+bool isHeadlightsActive = 0;
+
+bool depthFog = 0;
 
 //number of objects to be drawn
 int numObj = 0;
+
+class Obstacle {
+public:
+	float center[3] = { 0.0f, 0.0f, 0.0f };
+	float radius = 0.0f;
+};
+
+// number of obstacles that have bounding boxes
+const int numObstacle = 13;
+
+Obstacle obstacles[numObstacle];
 
 int activeCam = 0;
 
@@ -136,6 +171,8 @@ public:
 	float pos[3] = { 0.0f, 0.0f, 0.0f };
 	float angle = 0.0f;
 	float direction = 0.0f;
+	const float bb_radius = sqrt(0.75);
+	float bb_center[3] = { 0.5f, 0.5f, 0.5f };
 };
 
 Boat boat;
@@ -143,23 +180,99 @@ Boat boat;
 float deltaT = 0.05f;
 float decayy = 0.1f;
 
-
 // Structure to store data for each shark fin (cone)
 struct SharkFin {
+	//fin speed and position
 	float speed = 0.0f;
 	float pos[3] = { 1000.0f, 1000.0f, 0.0f };
+	//fin angle and fin direction, angle changes instantly when a or d are pressed and direction gradually changes to that value
 	float angle = 0.0f;
 	float direction = 0.0f;
+	//the slope of the line and initial position used to make the pathing of the fins
 	float slope = 0.0f;
-	float initialPos[3] = { 0.0f, 0.0f, 0.0f};
+	float initialPos[3] = { 0.0f, 0.0f, 0.0f };
+	float targetPos[3] = { 0.0f, 0.0f, 0.0f };
+	// radius and center for the sphere
+	const float bb_radius = 0.5f;
+	float bb_center[3] = { 0.0f, 0.0f, 0.0f };
 };
 // Shark fins
-const int sharkfinNumber = 4;
+const int sharkfinNumber = 1;
 SharkFin fins[sharkfinNumber];
+
+const float duration = 30.0f;  // 30 seconds duration
+float elapsedTime = 0.0f;     
+int difficulty = 0;
 
 // Function to generate a random float value between min and max
 float randomFloat(float min, float max) {
 	return min + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (max - min));
+}
+
+bool isColliding(float radius1, float *center1, float radius2, float *center2) {
+	// get the distance between the centers sqrt((x1-x2)^2 + (y1-y2)^2 + (z1-z2)^2)
+	float center_diff = sqrt(pow(center1[0] - center2[0], 2) + pow(center1[1] - center2[1], 2) + pow(center1[2] - center2[2], 2));
+	//get the total length of both radii combined
+	float radiusLength = radius1 + radius2;
+
+	if (center_diff < radiusLength) { return true; }
+	else { return false; };
+}
+
+void handleCollisionFin(int index)
+{
+	//vector that dictates what direction the objects will go when they collide
+	float centerVector[3] = { boat.bb_center[0] - fins[index].bb_center[0], boat.bb_center[1] - fins[index].bb_center[1], boat.bb_center[2] - fins[index].bb_center[2] };
+	normalize(centerVector);
+
+	//vector that stores boat speed.x, speed.y and speed.z (always 0)
+	float boatdirectionalSpeed[3] = { boat.speed * cos(boat.direction), boat.speed * sin(boat.direction), 0.0f };
+	//vector that stores fin speed.x, speed.y and speed.z (always 0)
+	float findirectionalSpeed[3] = { fins[index].speed * cos(fins[index].angle), fins[index].speed * sin(fins[index].angle), 0.0f };
+	//relative speed of the collision expressed in a 3d vector
+	float relativeSpeed[3] = { boatdirectionalSpeed[0] - findirectionalSpeed[0], boatdirectionalSpeed[1] - findirectionalSpeed[1], boatdirectionalSpeed[2] - findirectionalSpeed[2] };
+
+	//final speed of the collision considering the direction of the collision
+	float collisionSpeed = dotProduct(relativeSpeed, centerVector);
+	//now that the speed is calculated we must apply it to both objects
+	while (isColliding(boat.bb_radius, boat.bb_center, fins[index].bb_radius, fins[index].bb_center))
+	{
+		boat.bb_center[0] += 0.01f * centerVector[0];
+		boat.pos[0] += 0.01f * centerVector[0];
+		boat.bb_center[1] += 0.01f * centerVector[0];
+		boat.pos[1] += 0.01f * centerVector[1];
+	}
+
+	boat.acceleration = -5.0f;
+	boat.speed = -collisionSpeed / 5;
+	//boat.direction = (atan2(centerVector[0], centerVector[2])*180)/3.1415;
+	//boat.angle = (atan2(centerVector[0], centerVector[2]) * 180) / 3.1415;
+}
+
+void handleCollisionStatic(int index)
+{
+	//vector that dictates what direction the objects will go when they collide
+	float centerVector[3] = { boat.bb_center[0] - obstacles[index].center[0], boat.bb_center[1] - obstacles[index].center[1], boat.bb_center[2] - obstacles[index].center[2] };
+	normalize(centerVector);
+	
+	//relative speed of the collision expressed in a 3d vector
+	float relativeSpeed[3] = { boat.speed * cos(boat.direction), boat.speed * sin(boat.direction), 0.0f };
+
+	//final speed of the collision considering the direction of the collision
+	float collisionSpeed = dotProduct(relativeSpeed, centerVector);
+	//now that the speed is calculated we must apply it to both objects
+	while (isColliding(boat.bb_radius, boat.bb_center, obstacles[index].radius, obstacles[index].center))
+	{
+		boat.bb_center[0] += 0.01f * centerVector[0];
+		boat.pos[0] += 0.01f * centerVector[0];
+		boat.bb_center[1] += 0.01f * centerVector[0];
+		boat.pos[1] += 0.01f * centerVector[1];
+	}
+
+	boat.acceleration = -5.0f;
+	boat.speed = -collisionSpeed / 5;
+	//boat.direction = (atan2(centerVector[0], centerVector[2])*180)/3.1415;
+	//boat.angle = (atan2(centerVector[0], centerVector[2]) * 180) / 3.1415;
 }
 
 void timer(int value)
@@ -170,52 +283,67 @@ void timer(int value)
 	glutSetWindow(WindowHandle);
 	glutSetWindowTitle(s.c_str());
 	FrameCount = 0;
-	int i = 0;
 
 	// Boat movement logic
-	boat.pos[0] += ((boat.speed * deltaT) + (1/2 * boat.acceleration * pow(deltaT,2))) * cos(boat.direction * 3.14 / 180);
+	boat.pos[0] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * cos(boat.direction * 3.14 / 180);
 	boat.pos[1] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * sin(boat.direction * 3.14 / 180);
-	//boat.pos[1] += boat.speed * sin(boat.direction * 3.14 / 180) * deltaT;
+	
+	//pass deltaT to seconds
+	float dt = (1 / deltaT) / 1000.0f;
+	elapsedTime += dt;
 
-	// Define the radii for the paths (circular or elliptical)
-	float radius_1 = 5.0f;  // Radius for fin 1's path
-	float radius_2 = 7.0f;  // Radius for fin 2's path
-
-	for (i = 0; i < sharkfinNumber; i++)
+	// After 30 seconds, set progress to 1
+	if (elapsedTime >= duration) {
+		difficulty = 1;
+	}
+	
+	for (int i = 0; i < sharkfinNumber; i++)
 	{
-		
-
-		if ((abs(fins[i].pos[0] - fins[i].initialPos[0]) > 5.0f) || ((abs(fins[i].pos[1] - fins[i].initialPos[1])) > 5.0f))
+		if ((abs(fins[i].pos[0] - fins[i].initialPos[0]) > 10.0f) || ((abs(fins[i].pos[1] - fins[i].initialPos[1])) > 10.0f))
 		{
-			fins[i].initialPos[0] = (float)(5.0 * cos(rand())) + boat.pos[0];
-			fins[i].initialPos[1] = (float)(5.0 * sin(rand())) + boat.pos[1];
+			fins[i].initialPos[0] = (float)(10.0 * cos(rand())) + boat.pos[0];
+			fins[i].initialPos[1] = (float)(10.0 * sin(rand())) + boat.pos[1];
+			fins[i].targetPos[0] = boat.pos[0];
+			fins[i].targetPos[1] = boat.pos[1];
 			fins[i].slope = ((fins[i].initialPos[1] - boat.pos[1]) / (fins[i].initialPos[0] - boat.pos[0]));
+			fins[i].slope = fins[i].slope / abs(fins[i].slope);
 			fins[i].angle = atan(fins[i].slope);
 			fins[i].pos[0] = fins[i].initialPos[0];
 			fins[i].pos[1] = fins[i].initialPos[1];
-
+			fins[i].direction = -(180/3.1415) * atan2(boat.pos[1] - fins[i].pos[1], boat.pos[0] - fins[i].pos[0]);
 		}
-
 		
+
 		// Keep the angle between 0 and 360 degrees
 		if (fins[i].angle > 3.14) { fins[i].angle -= 3.14f; }
 		else if (fins[i].angle < -3.14f) { fins[i].angle += 3.14f; }
 
 		//fins movement logic
 		// we want them to move in a straight line, starting at their spawn point moving towards the boat position
-		fins[i].pos[0] += (fins[i].slope * deltaT) * cos(fins[i].angle);  // X position
-		fins[i].pos[1] += (fins[i].slope * deltaT) * sin(fins[i].angle);  // Y position
+		if (fins[i].initialPos[0] < fins[i].targetPos[0])
+		{
+			fins[i].pos[0] += -(fins[i].slope * deltaT) * cos(fins[i].angle);  // X position
+			fins[i].pos[1] += -(fins[i].slope * deltaT) * sin(fins[i].angle);  // Y position
+		}
+		else
+		{
+			fins[i].pos[0] += (fins[i].slope * deltaT) * cos(fins[i].angle);  // X position
+			fins[i].pos[1] += (fins[i].slope * deltaT) * sin(fins[i].angle);  // Y position
+		}
+		
 
+		fins[i].bb_center[0] = fins[i].pos[0];
+		fins[i].bb_center[1] = fins[i].pos[1];
 	}
 
 	//boat acceleration reduction
 	//boat moving forwards (press 'a' or 'd')
 	if ((boat.acceleration > 0) && (boat.speed >= 0))
 	{
-		boat.acceleration -= decayy;
+		boat.acceleration -= 3*decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
-	else if ((boat.acceleration <= 0) && (boat.speed > 0))
+	else if ((boat.acceleration < 0) && (boat.speed > 0))
 	{
 		boat.acceleration -= 2*decayy;
 		boat.speed += boat.acceleration * deltaT;
@@ -225,11 +353,12 @@ void timer(int value)
 			boat.speed = 0;
 		}
 	}
+	
 
 	//boat moving backwards (press 's')
 	if ((boat.acceleration < 0) && (boat.speed <= 0))
 	{
-		boat.acceleration += decayy;
+		boat.acceleration += 3*decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
 	else if ((boat.acceleration >= 0) && (boat.speed < 0))
@@ -242,6 +371,27 @@ void timer(int value)
 			boat.speed = 0;
 		}
 	}
+
+	boat.bb_center[0] = boat.pos[0] + (sqrt(2) / 2) * cos(((boat.direction * 3.1415) / 180) + 3.1415 / 4);
+	boat.bb_center[1] = boat.pos[1] + (sqrt(2) / 2) * sin(((boat.direction * 3.1415) / 180) + 3.1415 / 4);
+
+	//check for collision between boat and fins
+	for (int i = 0; i < sharkfinNumber; i++)
+	{
+		if (isColliding(boat.bb_radius, boat.bb_center, fins[i].bb_radius, fins[i].bb_center))
+		{
+			handleCollisionFin(i);
+		}
+	}
+	//check for collision in static objects
+	for (int i = 0; i < numObstacle; i++)
+	{
+		if (isColliding(boat.bb_radius, boat.bb_center, obstacles[i].radius, obstacles[i].center))
+		{
+			handleCollisionStatic(i);
+		}
+	}
+
 
 	//handle boat angle incremental increase, to make the rotation animation
 	if ((boat.angle - boat.direction) > 0)
@@ -364,9 +514,19 @@ void renderScene(void) {
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
 
-	cams[0].pos[0] = camX + boat.pos[0];
-	cams[0].pos[1] = camY + boat.pos[2];
-	cams[0].pos[2] = camZ + boat.pos[1];
+	float headlightPos[4] = { boat.pos[0], 1.0f, boat.pos[1], 1.0f};			// Boat headlight world position (spotlight)
+	float headlightPos2[4] = { boat.pos[0], 1.0f, 1.0f + boat.pos[1], 1.0f};	// Boat headlight 2 world postion (spotlight)
+
+	float headlightDir[4] = { 1.0f, 0.0f, 0.0f, 0.0f };		// Spotlight pointing diretion 
+	float headlightDir2[4] = { 1.0f, 0.0f, 0.0f, 0.0f };	// Spotlight 2 pointing diretion
+
+	float headlightAngle = 0.9;		// Spotlight angle (0-0.9999)
+
+	float headlightExp = 0.02f;		// Headlights quality
+
+	cams[0].pos[0] = camX + boat.bb_center[0];
+	cams[0].pos[1] = camY + boat.bb_center[2];
+	cams[0].pos[2] = camZ + boat.bb_center[1];
 
 	cams[1].type = 1;
 	cams[1].pos[1] = 20;
@@ -376,7 +536,7 @@ void renderScene(void) {
 	// Follow Cam
 	if (activeCam == 0) {
 		// set the camera using a function similar to gluLookAt
-		lookAt(cams[0].pos[0], cams[0].pos[1], cams[0].pos[2], boat.pos[0], boat.pos[2], boat.pos[1], 0, 1, 0);
+		lookAt(cams[0].pos[0], cams[0].pos[1], cams[0].pos[2], boat.bb_center[0], boat.bb_center[2], boat.bb_center[1], 0, 1, 0);
 	}
 	// Static Ortho Cam
 	else if (activeCam == 1) {
@@ -391,7 +551,7 @@ void renderScene(void) {
 
 	glGetIntegerv(GL_VIEWPORT, m_view);
 
-	float ratio = (m_view[2] - m_view[0]) / (m_view[3] - m_view[1]);
+	float ratio = (float)(m_view[2] - m_view[0]) / (m_view[3] - m_view[1]);
 
 	loadIdentity(PROJECTION);
 
@@ -406,29 +566,59 @@ void renderScene(void) {
 
 	glUseProgram(shader.getProgramIndex());
 
-
 		float res[4];		// Point light world position
 		float res2[4];		// Spotlight world position 
 		float res3[4];		// Spotlight 2 world position
 		float res4[4];		// Spotlight poiting diretion
 		float res5[4];		// Spotlight 2 poiting diretion
 
-		multMatrixPoint(VIEW, lightPos, res);		// lightPos definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, spotLightPos, res2);  // spotLightPos definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, spotLightPos2, res3); // spotLightPos2 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, spotLightDir, res4);	// spotLightDir definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, spotLightDir2, res5); // spotLightDir2 definido em World Coord so is converted to eye space
+		float res6[4];		// Buoy light world position
+		float res7[4];		// Buoy light world position
+		float res8[4];		// Buoy light world position
+		float res9[4];		// Buoy light world position
+		float res10[4];		// Buoy light world position
+		float res11[4];		// Buoy light world position
 
-		glUniform4fv(lPos_uniformId, 1, res);
-		glUniform4fv(slPos_uniformId, 1, res2);
-		glUniform4fv(slPos_uniformId2, 1, res3);
-		glUniform4fv(slDir_uniformId, 1, res4);
-		glUniform4fv(slDir_uniformId2, 1, res5);
+		multMatrixPoint(VIEW, sunLightPos, res);		// sunLightPos definido em World Coord so is converted to eye space
+		
+		multMatrixPoint(VIEW, headlightPos, res2);		// headlightPos definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, headlightPos2, res3);		// headlightPos2 definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, headlightDir, res4);		// headlightDir definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, headlightDir2, res5);		// headlightDir2 definido em World Coord so is converted to eye space
 
-		glUniform1f(slAngle_uniformId, slAngle);
-		glUniform1f(slAngle_uniformId2, slAngle2);
-		glUniform1f(slExp_uniformId, slExp);
-		glUniform1f(slExp_uniformId2, slExp2);
+		multMatrixPoint(VIEW, buoyLightPos, res6);		// buoyLightPos definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, buoyLightPos2, res7);		// buoyLightPos2 definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, buoyLightPos3, res8);		// buoyLightPos3 definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, buoyLightPos4, res9);		// buoyLightPos4 definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, buoyLightPos5, res10);	// buoyLightPos5 definido em World Coord so is converted to eye space
+		multMatrixPoint(VIEW, buoyLightPos6, res11);	// buoyLightPos6 definido em World Coord so is converted to eye space
+
+		glUniform4fv(sunPos_uniformId, 1, res);
+
+		glUniform4fv(buoyPos_uniformId, 1, res6);
+		glUniform4fv(buoyPos2_uniformId, 1, res7);
+		glUniform4fv(buoyPos3_uniformId, 1, res8);
+		glUniform4fv(buoyPos4_uniformId, 1, res9);
+		glUniform4fv(buoyPos5_uniformId, 1, res10);
+		glUniform4fv(buoyPos6_uniformId, 1, res11);
+
+		glUniform1f(buoyConstantAttenuation_unirformId, buoyLightConstantAttenuation);
+		glUniform1f(buoyLinearAttenuation_unirformId, buoyLightLinearAttenuation);
+		glUniform1f(buoyQuadraticAttenuation_unirformId, buoyLightQuadraticAttenuation);
+
+		glUniform4fv(headlightPos_uniformId, 1, res2);
+		glUniform4fv(headlightPos2_uniformId, 1, res3);
+		glUniform4fv(headlightDir_uniformId, 1, res4);
+		glUniform4fv(headlightDir2_uniformId, 1, res5);
+
+		glUniform1f(headlightAngle_uniformId, headlightAngle);
+		glUniform1f(headlightExp_uniformId, headlightExp);
+
+		glUniform1f(isSunActive_uniformId, isSunActive);
+		glUniform1f(isBuoyLightsActive_uniformId, isBuoyLightsActive);
+		glUniform1f(isHeadlightsActive_uniformId, isHeadlightsActive);
+
+		glUniform1f(depthFog_uniformId, depthFog);
 
 		int objId = 0;
 
@@ -444,10 +634,17 @@ void renderScene(void) {
 		glActiveTexture(GL_TEXTURE2);
 		glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
 
+
+		int stone = 0;		// IDs das texturas
+		int checker = 1;
+		int wood = 2;
+
 		//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
-		glUniform1i(tex_loc, 0);
-		glUniform1i(tex_loc1, 1);
-		glUniform1i(tex_loc2, 2);
+		glUniform1i(tex_loc, stone);
+		glUniform1i(tex_loc1, checker);
+		glUniform1i(tex_loc2, wood);
+
+		glUniform1i(texMode_uniformId, wood);
 
 	for (int i = 0; i < numObj; ++i) {
 
@@ -461,82 +658,167 @@ void renderScene(void) {
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
 		glUniform1f(loc, myMeshes[objId].mat.shininess);
 		pushMatrix(MODEL);
+
 		// """water"""
 		if (i == 0) {
-			//rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
+			glUniform1i(texMode_uniformId, wood);
+			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
 		}
 		// boat
-		if (i == 1)
+		else if (i == 1)
 		{
+			glUniform1i(texMode_uniformId, wood);
 			translate(MODEL, boat.pos[0] - 0.0f, boat.pos[2], boat.pos[1] - 0.0f);
 			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
 		}
-		if (i == 0) { 
-			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f); 
-		} 
 		//base of 1st house 
 		else if (i == 2) {
+			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, 4.5f, 0.0f, 4.5);
+			translate(MODEL, (obstacles[0].center[0]/2) - 0.5f, (obstacles[0].center[2] / 2) - 0.5f, (obstacles[0].center[1] / 2) - 0.5f);
 		}
 		//roof of 1st house
 		else if (i == 3) {
-
+			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, 5.0f, 1.0f, 5.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
 		//base of 2nd house 
 		else if (i == 4) {
+			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, 4.5f, 0.0f, -1.5f);
+			translate(MODEL, (obstacles[1].center[0] / 2) - 0.5f, (obstacles[1].center[2] / 2) - 0.5f, (obstacles[1].center[1] / 2) - 0.5f);
 		}
 		//roof of 2nd house 
 		else if (i == 5) {
+			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, 5.0f, 1.0f, -1.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
 		//base of 3rd house 
 		else if (i == 6) {
+			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, -4.5f, 0.0f, -1.5f);
+			translate(MODEL, (obstacles[2].center[0] / 2) - 0.5f, (obstacles[2].center[2] / 2) - 0.5f, (obstacles[2].center[1] / 2) - 0.5f);
 		}
 		//roof of 3rd house 
 		else if (i == 7) {
+			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, -4.0f, 1.0f, -1.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
-		//handle of the paddle
+		//base of 4th house 
 		else if (i == 8) {
+			glUniform1i(texMode_uniformId, stone);
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, (obstacles[3].center[0] / 2) - 0.5f, (obstacles[3].center[2] / 2) - 0.5f, (obstacles[3].center[1] / 2) - 0.5f);
+		}
+		//roof of 4th house 
+		else if (i == 9) {
+			glUniform1i(texMode_uniformId, wood);
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, 7.5f, 1.0f, 1.5f);
+			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+		}
+		//base of 5th house 
+		else if (i == 10) {
+			glUniform1i(texMode_uniformId, stone);
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, (obstacles[4].center[0] / 2) - 0.5f, (obstacles[4].center[2] / 2) - 0.5f, (obstacles[4].center[1] / 2) - 0.5f);
+		}
+		//roof of 5th house 
+		else if (i == 11) {
+			glUniform1i(texMode_uniformId, wood);
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, -4.0f, 1.0f, 1.5f);
+			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+		}
+		//base of 6th house 
+		else if (i == 12) {
+			glUniform1i(texMode_uniformId, stone);
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, (obstacles[5].center[0] / 2) - 0.5f, (obstacles[5].center[2] / 2) - 0.5f, (obstacles[5].center[1] / 2) - 0.5f);
+		}
+		//roof of 6th house 
+		else if (i == 13) {
+			glUniform1i(texMode_uniformId, wood);
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, -1.0f, 1.0f, 3.5f);
+			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+		}
+		//base of 7th house 
+		else if (i == 14) {
+			glUniform1i(texMode_uniformId, stone);
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, (obstacles[6].center[0] / 2) - 0.5f, (obstacles[6].center[2] / 2) - 0.5f, (obstacles[6].center[1] / 2) - 0.5f);
+		}
+		//roof of 7th house 
+		else if (i == 15) {
+			glUniform1i(texMode_uniformId, wood);
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, -4.0f, 1.0f, 7.0f);
+			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+		}
+		//1st buoy 
+		else if (i == 16) {
+			translate(MODEL, (obstacles[7].center[0] / 1) - 0.0f, (obstacles[7].center[2] / 1) - 1.0f, (obstacles[7].center[1] / 1) - 0.0f);
+		}
+		//2nd buoy 
+		else if (i == 17) {
+			translate(MODEL, (obstacles[8].center[0] / 1) - 0.0f, (obstacles[8].center[2] / 1) - 1.0f, (obstacles[8].center[1] / 1) - 0.0f);
+		}
+		//3rd buoy 
+		else if (i == 18) {
+			translate(MODEL, (obstacles[9].center[0] / 1) - 0.0f, (obstacles[9].center[2] / 1) - 1.0f, (obstacles[9].center[1] / 1) - 0.0f);
+		}
+		//4th buoy 
+		else if (i == 19) {
+			translate(MODEL, (obstacles[10].center[0] / 1) - 0.0f, (obstacles[10].center[2] / 1) - 1.0f, (obstacles[10].center[1] / 1) - 0.0f);
+		}
+		//5th buoy 
+		else if (i == 20) {
+			translate(MODEL, (obstacles[11].center[0] / 1) - 0.0f, (obstacles[11].center[2] / 1) - 1.0f, (obstacles[11].center[1] / 1) - 0.0f);
+		}
+		//6th buoy 
+		else if (i == 21) {
+			translate(MODEL, (obstacles[12].center[0] / 1) - 0.0f, (obstacles[12].center[2] / 1) - 1.0f, (obstacles[12].center[1] / 1) - 0.0f);
+			}
+		//handle of the paddle
+		else if (i == 22) {
+			glUniform1i(texMode_uniformId, wood);
 			translate(MODEL, 0.5f, 1.2f, 0.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//head1 of the paddle
-		else if (i == 9) {
+		else if (i == 23) {
+			glUniform1i(texMode_uniformId, wood);
 			translate(MODEL, -0.4f, 1.2f, 0.0f);
 			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//head2 of the paddle
-		else if (i == 10) {
+		else if (i == 24) {
+			glUniform1i(texMode_uniformId, wood);
 			translate(MODEL, 1.4f, 1.2f, 0.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
-		//shark fin 1
-		else if (i == 11) {
-			translate(MODEL, fins[0].pos[0] - 2.0f, fins[0].pos[2], fins[0].pos[1] - 1.0f); // Adjust for fin's position
-			rotate(MODEL, -fins[0].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
-
+		//ball
+		else if (i == 25) {
+			//translate(MODEL, 0.5f, 0.5f, 0.5f);
+			translate(MODEL, boat.bb_center[0], boat.bb_center[2], boat.bb_center[1]);
+			
+			//translate(MODEL, fins[0].pos[0] - 2.0f, fins[0].pos[2], fins[0].pos[1] - 1.0f); // Adjust for fin's position
+			//rotate(MODEL, -fins[0].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
 			//translate(MODEL, 5.0f, 0.0f, 5.0f);
 			//rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//shark fin 2
-		else if (i == 12) {
+		else if (i == 26) {
 			translate(MODEL, fins[1].pos[0] - 4.0f, fins[1].pos[2], fins[1].pos[1] - 0.0f); // Adjust for fin's position
 			rotate(MODEL, -fins[1].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
 		
-
 			//translate(MODEL, 4.0f, 0.0f, -7.0f);
 			//rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
@@ -544,7 +826,8 @@ void renderScene(void) {
 		// Initial settings for fins' speed and direction:
 		for (int j = 0; j < sharkfinNumber; j++)
 		{
-			fins[j].speed = 30.0f;  // Degrees per second
+			if (difficulty == 0) { fins[j].speed = 30.0f; }
+			else if (difficulty == 1) { fins[j].speed = 60.0f; }
 		}
 
 		// send matrices to OGL
@@ -575,10 +858,12 @@ void renderScene(void) {
 		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
 		glUniform1f(loc, myMeshes[objId].mat.shininess);
+		glUniform1i(texMode_uniformId, checker);
+
 		pushMatrix(MODEL);
 
-		translate(MODEL, fins[i].pos[0], fins[i].pos[2], fins[i].pos[1]); // Adjust for fin's position
-		//rotate(MODEL, -fins[i].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
+		translate(MODEL, fins[i].pos[0], fins[i].pos[2], fins[i].pos[1]); // Adjust for fin's position6
+		rotate(MODEL, fins[i].direction, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
 
 		// send matrices to OGL
 		computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -595,6 +880,37 @@ void renderScene(void) {
 		popMatrix(MODEL);
 		objId++;
 	}
+	/*for (int i = 0; i < numObstacle; i++)
+	{
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[objId].mat.shininess);
+		pushMatrix(MODEL);
+		
+		//translate(MODEL, obstacles[i].center[0], obstacles[i].center[2], obstacles[i].center[1]); // Adjust for fin's position
+		//rotate(MODEL, -fins[i].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(myMeshes[objId].vao);
+		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		objId++;
+	}*/
 	
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
@@ -613,8 +929,8 @@ void renderScene(void) {
 	pushMatrix(VIEW);
 	loadIdentity(VIEW);
 	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
-	RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
-	RenderText(shaderText, "AVT Light and Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3, 0.7f, 0.9f);
+	//RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
+	//RenderText(shaderText, "AVT Light and Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3, 0.7f, 0.9f);
 	popMatrix(PROJECTION);
 	popMatrix(VIEW);
 	popMatrix(MODEL);
@@ -638,11 +954,11 @@ void processKeys(unsigned char key, int xx, int yy)
 		glutLeaveMainLoop();
 		break;
 
-	case 'c':
+	case 'p':
 		printf("Camera Spherical Coordinates (%f, %f, %f)\n", alpha, beta, r);
 		break;
 	case 'm': glEnable(GL_MULTISAMPLE); break;
-	case 'n': glDisable(GL_MULTISAMPLE); break;
+	case 'k': glDisable(GL_MULTISAMPLE); break;
 
 		// Follow Cam
 	case '1':
@@ -686,7 +1002,19 @@ void processKeys(unsigned char key, int xx, int yy)
 		{
 			speedSwitch = 0;
 		}
-	
+		break;
+	case 'n':
+		isSunActive = !isSunActive;
+		break;
+	case 'c':
+		isBuoyLightsActive = !isBuoyLightsActive;
+		break;
+	case 'h':
+		isHeadlightsActive = !isHeadlightsActive;
+		break;
+	case 'f':
+		depthFog = !depthFog;
+		break;
 	}
 }
 
@@ -786,8 +1114,6 @@ void mouseWheel(int wheel, int direction, int x, int y) {
 //
 // Shader Stuff
 //
-
-
 GLuint setupShaders() {
 
 	// Shader for models
@@ -813,21 +1139,37 @@ GLuint setupShaders() {
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
 
-	lPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "l_pos");		// Point light world position
-	slPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_pos");		// Spotlight world position
-	slPos_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_pos2");	// Spotlight 2 world position
-	slDir_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_dir");		// Spotlight 2 world position
-	slDir_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_dir2");	// Spotlight 2 world position
+	sunPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sun_pos");					// Sun light world position
 
-	slAngle_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_angle");		// Spotlight angle
-	slAngle_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_angle2");	// Spotlight 2 angle
+	buoyPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos");					// Buoy light world position
+	buoyPos2_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos2");				// Buoy2 light world position
+	buoyPos3_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos3");				// Buoy3 light world position
+	buoyPos4_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos4");				// Buoy4 light world position
+	buoyPos5_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos5");				// Buoy5 light world position
+	buoyPos6_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos6");				// Buoy6 light world position
 
-	slExp_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_exp");		// Spotlight exponent
-	slExp_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_exp2");	// Spotlight 2 exponent
+	buoyConstantAttenuation_unirformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_const_att");	// Buoys constant attenuation
+	buoyLinearAttenuation_unirformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_linear_att");	// Buoys linear attenuation
+	buoyQuadraticAttenuation_unirformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_quad_att");	// Buoys quadratic attenuation
+
+	headlightPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "headlight_pos");		// Boat headlight world position
+	headlightPos2_uniformId = glGetUniformLocation(shader.getProgramIndex(), "headlight_pos2");		// Boat headlight 2 world position
+	headlightDir_uniformId = glGetUniformLocation(shader.getProgramIndex(), "headlight_dir");		// Boat headlight diretion
+	headlightDir2_uniformId = glGetUniformLocation(shader.getProgramIndex(), "headlight_dir2");		// Boat headlight 2 diretion
+	headlightAngle_uniformId = glGetUniformLocation(shader.getProgramIndex(), "headlight_angle");	// Boat headlight angle
+	headlightExp_uniformId = glGetUniformLocation(shader.getProgramIndex(), "headlight_exp");		// Boat headlight exponent
+
+	isSunActive_uniformId = glGetUniformLocation(shader.getProgramIndex(), "isSunActive");					// Sun light bool
+	isBuoyLightsActive_uniformId = glGetUniformLocation(shader.getProgramIndex(), "isBuoyLightsActive");	// Buoy lights bool
+	isHeadlightsActive_uniformId = glGetUniformLocation(shader.getProgramIndex(), "isHeadlightsActive");	// Boat headlights bool
+
+	depthFog_uniformId = glGetUniformLocation(shader.getProgramIndex(), "depthFog");	// Spotlight 2 exponent
 
 	tex_loc = glGetUniformLocation(shader.getProgramIndex(), "texmap");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
+
+	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode"); // different modes of texturing
 
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 
@@ -851,7 +1193,6 @@ GLuint setupShaders() {
 //
 // Model loading and OpenGL setup
 //
-
 void init()
 {
 	MyMesh amesh;
@@ -887,7 +1228,7 @@ void init()
 	int texcount = 0;
 
 	//create the water quad
-	amesh = createQuad(100.0f, 100.0f);
+	amesh = createQuad(100000.0f, 100000.0f);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
 	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
@@ -914,7 +1255,7 @@ void init()
 	numObj++;
 
 	//lets try making a house
-	//base of the house
+	//base of the house 1
 	amesh = createCube();
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -924,7 +1265,7 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	numObj++;
-	//roof of the house
+	//roof of the house 1
 	amesh = createCone(0.5, 1.0, 4);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -934,9 +1275,13 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	numObj++;
+	obstacles[0].center[0] = 9.0f + 1.0f;
+	obstacles[0].center[1] = 9.0f + 1.0f;
+	obstacles[0].center[2] = 0.0f + 1.0f;
+	obstacles[0].radius = 1.0f; //sqrt(0.75 * 4);
 
 	//antoher one
-	//base of the house
+	//base of the house 2
 	amesh = createCube();
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -946,7 +1291,7 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	numObj++;
-	//roof of the house
+	//roof of the house 2
 	amesh = createCone(0.5, 1.0, 4);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -956,9 +1301,13 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	numObj++;
+	obstacles[1].center[0] = 9.0f + 1.0f;
+	obstacles[1].center[1] = -3.0f + 1.0f;
+	obstacles[1].center[2] = 0.0f + 1.0f;
+	obstacles[1].radius = 1.0f; //sqrt(0.75 * 4);
 
 	//and antoher one
-	//base of the house
+	//base of the house 3
 	amesh = createCube();
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -968,7 +1317,7 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	numObj++;
-	//roof of the house
+	//roof of the house 3
 	amesh = createCone(0.5, 1.0, 4);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -978,6 +1327,201 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	numObj++;
+	obstacles[2].center[0] = -9.0f + 1.0f;
+	obstacles[2].center[1] = -3.0f + 1.0f;
+	obstacles[2].center[2] = 0.0f + 1.0f;
+	obstacles[2].radius = 1.0f; //sqrt(0.75 * 4);
+
+	//and antoher one
+	//base of the house 4
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//roof of the house 4
+	amesh = createCone(0.5, 1.0, 4);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[3].center[0] = 14.0f + 1.0f;
+	obstacles[3].center[1] = 2.0f + 1.0f;
+	obstacles[3].center[2] = 0.0f + 1.0f;
+	obstacles[3].radius = 1.0f; //sqrt(0.75 * 4);
+
+	//and antoher one
+	//base of the house 5
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//roof of the house 5
+	amesh = createCone(0.5, 1.0, 4);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[4].center[0] = -9.0f + 1.0f;
+	obstacles[4].center[1] = 2.0f + 1.0f;
+	obstacles[4].center[2] = 0.0f + 1.0f;
+	obstacles[4].radius = 1.0f; //sqrt(0.75 * 4);
+
+	//and antoher one
+	//base of the house 6
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//roof of the house 6
+	amesh = createCone(0.5, 1.0, 4);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[5].center[0] = -3.0f + 1.0f;
+	obstacles[5].center[1] = 6.0f + 1.0f;
+	obstacles[5].center[2] = 0.0f + 1.0f;
+	obstacles[5].radius = 1.0f; //sqrt(0.75 * 4);
+
+	//and antoher one
+	//base of the house 7
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//roof of the house 7
+	amesh = createCone(0.5, 1.0, 4);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[6].center[0] = -9.0f + 1.0f;
+	obstacles[6].center[1] = 13.0f + 1.0f;
+	obstacles[6].center[2] = 0.0f + 1.0f;
+	obstacles[6].radius = 1.0f; //sqrt(0.75 * 4);
+
+	//lets make the buoys
+	//buoy 1
+	amesh = createCone(3.0, 0.3, 100);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[7].center[0] = 7.0f;
+	obstacles[7].center[1] = -5.0f;
+	obstacles[7].center[2] = 0.0f + 1.0f;
+	obstacles[7].radius = 0.2f;
+	//buoy 2
+	amesh = createCone(3.0, 0.3, 100);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[8].center[0] = 3.0f;
+	obstacles[8].center[1] = 13.0f;
+	obstacles[8].center[2] = 0.0f + 1.0f;
+	obstacles[8].radius = 0.2f;
+	//buoy 3
+	amesh = createCone(3.0, 0.3, 100);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[9].center[0] = -8.0f;
+	obstacles[9].center[1] = -6.0f;
+	obstacles[9].center[2] = 0.0f + 1.0f;
+	obstacles[9].radius = 0.2f;
+	//buoy 4
+	amesh = createCone(3.0, 0.3, 100);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[10].center[0] = 20.0f;
+	obstacles[10].center[1] = 13.0f;
+	obstacles[10].center[2] = 0.0f + 1.0f;
+	obstacles[10].radius = 0.2f;
+	//buoy 5
+	amesh = createCone(3.0, 0.3, 100);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[11].center[0] = 19.0f;
+	obstacles[11].center[1] = 18.0f;
+	obstacles[11].center[2] = 0.0f + 1.0f;
+	obstacles[11].radius = 0.2f;
+	//buoy 6
+	amesh = createCone(3.0, 0.3, 100);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[12].center[0] = 15.0f;
+	obstacles[12].center[1] = 20.0f;
+	obstacles[12].center[2] = 0.0f + 1.0f;
+	obstacles[12].radius = 0.2f;
+
 
 	//lets do the paddle for the boat
 	//handle
@@ -1011,18 +1555,39 @@ void init()
 	myMeshes.push_back(amesh);
 	numObj++;
 
+	/*amesh = createSphere(boat.bb_radius, 500);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;*/
+
 	//shark fins
 	for (int i = 0; i < sharkfinNumber; i++)
 	{
 		amesh = createCone(1, 0.5f, 3);
-		memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
-		memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
-		memcpy(amesh.mat.specular, spec, 10 * sizeof(float));
-		memcpy(amesh.mat.emissive, emissive, 10 * sizeof(float));
+		memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
 		amesh.mat.shininess = shininess;
 		amesh.mat.texCount = texcount;
 		myMeshes.push_back(amesh);
 	}
+	/*for (int i = 0; i < numObstacle; i++)
+	{
+		amesh = createSphere(obstacles[i].radius, 500);
+		memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+		amesh.mat.shininess = shininess;
+		amesh.mat.texCount = texcount;
+		myMeshes.push_back(amesh);
+	}*/
 
 	/*// create geometry and VAO of the pawn
 	amesh = createPawn();

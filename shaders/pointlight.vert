@@ -4,19 +4,31 @@ uniform mat4 m_pvm;
 uniform mat4 m_viewModel;
 uniform mat3 m_normal;
 
-uniform vec4 l_pos;
-uniform vec4 sl_pos;
-uniform vec4 sl_pos2;
+uniform vec4 sun_pos;
+
+uniform vec4 buoy_pos;
+uniform vec4 buoy_pos2;
+uniform vec4 buoy_pos3;
+uniform vec4 buoy_pos4;
+uniform vec4 buoy_pos5;
+uniform vec4 buoy_pos6;
+
+uniform vec4 headlight_pos;
+uniform vec4 headlight_pos2;
 
 in vec4 position;
 in vec4 normal;    //por causa do gerador de geometria
 
+in vec4 texCoord;
+
 out Data {
 	vec3 normal;
 	vec3 eye;
-	vec3 lightDir;
-	vec3 lightDir2;
-	vec3 lightDir3;
+	vec3 sunLightDir;
+	vec3 buoyLightDir[6];
+	vec3 headlightDir;
+	vec3 headlightDir2;
+	vec2 tex_coord;
 } DataOut;
 
 void main () {
@@ -24,10 +36,19 @@ void main () {
 	vec4 pos = m_viewModel * position;
 
 	DataOut.normal = normalize(m_normal * normal.xyz);
-	DataOut.lightDir = vec3(l_pos - pos);
-	DataOut.lightDir2 = vec3(sl_pos - pos);
-	DataOut.lightDir3 = vec3(sl_pos2 - pos);
+	DataOut.sunLightDir = vec3(sun_pos - pos);
+
+	DataOut.buoyLightDir[0] = vec3(buoy_pos - pos);
+	DataOut.buoyLightDir[1] = vec3(buoy_pos2 - pos);
+	DataOut.buoyLightDir[2] = vec3(buoy_pos3 - pos);
+	DataOut.buoyLightDir[3] = vec3(buoy_pos4 - pos);
+	DataOut.buoyLightDir[4] = vec3(buoy_pos5 - pos);
+	DataOut.buoyLightDir[5] = vec3(buoy_pos6 - pos);
+	
+	DataOut.headlightDir = vec3(headlight_pos - pos);
+	DataOut.headlightDir2 = vec3(headlight_pos2 - pos);
 	DataOut.eye = vec3(-pos);
+	DataOut.tex_coord = texCoord.st;
 
 	gl_Position = m_pvm * position;	
 }
