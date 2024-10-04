@@ -474,16 +474,6 @@ void timer(int value)
 	glutTimerFunc(1 / deltaT, timer, 0);
 }
 
-void refresh(int value)
-{
-	//PUT YOUR CODE HERE
-}
-
-// ------------------------------------------------------------
-//
-// Reshape Callback Function
-//
-
 void changeSize(int w, int h) {
 
 	float ratio;
@@ -497,12 +487,6 @@ void changeSize(int w, int h) {
 	loadIdentity(PROJECTION);
 	perspective(53.13f, ratio, 0.1f, 1000.0f);
 }
-
-
-// ------------------------------------------------------------
-//
-// Render stufff
-//
 
 void renderScene(void) {
 
@@ -804,25 +788,7 @@ void renderScene(void) {
 			translate(MODEL, 1.4f, 1.2f, 0.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
-		//ball
-		else if (i == 25) {
-			//translate(MODEL, 0.5f, 0.5f, 0.5f);
-			translate(MODEL, boat.bb_center[0], boat.bb_center[2], boat.bb_center[1]);
-			
-			//translate(MODEL, fins[0].pos[0] - 2.0f, fins[0].pos[2], fins[0].pos[1] - 1.0f); // Adjust for fin's position
-			//rotate(MODEL, -fins[0].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
-			//translate(MODEL, 5.0f, 0.0f, 5.0f);
-			//rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
-		}
-		//shark fin 2
-		else if (i == 26) {
-			translate(MODEL, fins[1].pos[0] - 4.0f, fins[1].pos[2], fins[1].pos[1] - 0.0f); // Adjust for fin's position
-			rotate(MODEL, -fins[1].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
-		
-			//translate(MODEL, 4.0f, 0.0f, -7.0f);
-			//rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
-		}
-
+	
 		// Initial settings for fins' speed and direction:
 		for (int j = 0; j < sharkfinNumber; j++)
 		{
@@ -880,38 +846,6 @@ void renderScene(void) {
 		popMatrix(MODEL);
 		objId++;
 	}
-	/*for (int i = 0; i < numObstacle; i++)
-	{
-		// send the material
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, myMeshes[objId].mat.shininess);
-		pushMatrix(MODEL);
-		
-		//translate(MODEL, obstacles[i].center[0], obstacles[i].center[2], obstacles[i].center[1]); // Adjust for fin's position
-		//rotate(MODEL, -fins[i].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
-
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		// Render mesh
-		glBindVertexArray(myMeshes[objId].vao);
-		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
-		popMatrix(MODEL);
-		objId++;
-	}*/
-	
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 	glDisable(GL_DEPTH_TEST);
@@ -1555,16 +1489,6 @@ void init()
 	myMeshes.push_back(amesh);
 	numObj++;
 
-	/*amesh = createSphere(boat.bb_radius, 500);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;*/
-
 	//shark fins
 	for (int i = 0; i < sharkfinNumber; i++)
 	{
@@ -1577,17 +1501,6 @@ void init()
 		amesh.mat.texCount = texcount;
 		myMeshes.push_back(amesh);
 	}
-	/*for (int i = 0; i < numObstacle; i++)
-	{
-		amesh = createSphere(obstacles[i].radius, 500);
-		memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-		memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-		memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-		amesh.mat.shininess = shininess;
-		amesh.mat.texCount = texcount;
-		myMeshes.push_back(amesh);
-	}*/
 
 	/*// create geometry and VAO of the pawn
 	amesh = createPawn();
