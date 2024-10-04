@@ -579,11 +579,6 @@ void renderScene(void) {
 		float res10[4];		// Buoy light world position
 		float res11[4];		// Buoy light world position
 
-		float res2[4];		// Boat headlight world position 
-		float res3[4];		// Boat headlight 2 world position
-		float res4[4];		// Boat headlight diretion
-		float res5[4];		// Boat headlight 2 diretion
-
 		multMatrixPoint(VIEW, sunLightPos, res);		// sunLightPos definido em World Coord so is converted to eye space
 		
 		multMatrixPoint(VIEW, headlightPos, res2);		// headlightPos definido em World Coord so is converted to eye space

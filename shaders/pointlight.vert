@@ -28,6 +28,7 @@ out Data {
 	vec3 buoyLightDir[6];
 	vec3 headlightDir;
 	vec3 headlightDir2;
+	vec2 tex_coord;
 } DataOut;
 
 void main () {

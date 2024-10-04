@@ -47,6 +47,7 @@ in Data {
 	vec3 buoyLightDir[6];
 	vec3 headlightDir;
 	vec3 headlightDir2;
+	vec2 tex_coord;
 } DataIn;
 
 vec3 l;				// normalized light direction
@@ -57,6 +58,7 @@ float intSpec;		// specular component
 float attenuation;
 float spotEffect;
 vec3 sd;
+
 void main() {
 
 	float dist; // camera to point distance
@@ -79,16 +81,6 @@ void main() {
 	// Fog parameters (increased density)
 	float fogAmount = clamp(pow(dist * 0.03, 0.75), 0.0, 1.0);  // Increase density by modifying the exponent and multiplier
 	vec3 fogColor = vec3(0.5, 0.6, 0.7);  // Color of the fog
-
-	// Light 1 - Point light
-	vec3 l1 = normalize(DataIn.lightDir);
-	float intensity = max(dot(n, l1), 0.0);
-	if (intensity > 0.0) {
-		vec3 h1 = normalize(l1 + e);
-		float intSpec = max(dot(h1, n), 0.0);
-		totalSpecular += mat.specular * pow(intSpec, mat.shininess);
-	}
-	totalDiffuse += intensity * mat.diffuse;
 
 	// Light 1 - Sun light (Directional)
 	if( isSunActive == true ){
