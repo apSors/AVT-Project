@@ -75,7 +75,12 @@ GLint slAngle_uniformId2;	// Spotlight 2 angle
 GLint slExp_uniformId;		// Spotlight exponent
 GLint slExp_uniformId2;		// Spotlight 2 exponent
 
+GLint depthFog_uniformId;	// Fog controller
+
+GLuint TextureArray[3];
+
 GLint tex_loc, tex_loc1, tex_loc2;
+GLint texMode_uniformId;
 
 // Camera Position
 float camX, camY, camZ;
@@ -103,6 +108,8 @@ float slAngle2 = 0.95;	// Spotlight 2 angle
 
 float slExp = 10.0;		// Spotlight quality
 float slExp2 = 1.0;	// Spotlight 2 quality
+
+bool depthFog = 0;
 
 //number of objects to be drawn
 int numObj = 0;
@@ -531,7 +538,6 @@ void renderScene(void) {
 
 	glUseProgram(shader.getProgramIndex());
 
-
 		float res[4];		// Point light world position
 		float res2[4];		// Spotlight world position 
 		float res3[4];		// Spotlight 2 world position
@@ -555,7 +561,33 @@ void renderScene(void) {
 		glUniform1f(slExp_uniformId, slExp);
 		glUniform1f(slExp_uniformId2, slExp2);
 
+		glUniform1f(depthFog_uniformId, depthFog);
+
 		int objId = 0;
+
+		//Associar os Texture Units aos Objects Texture
+		//stone.tga loaded in TU0; checker.tga loaded in TU1;  lightwood.tga loaded in TU2
+
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+
+		glActiveTexture(GL_TEXTURE1);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+
+		glActiveTexture(GL_TEXTURE2);
+		glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+
+
+		int stone = 0;		// IDs das texturas
+		int checker = 1;
+		int wood = 2;
+
+		//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
+		glUniform1i(tex_loc, stone);
+		glUniform1i(tex_loc1, checker);
+		glUniform1i(tex_loc2, wood);
+
+		glUniform1i(texMode_uniformId, wood);
 
 	for (int i = 0; i < numObj; ++i) {
 
@@ -569,49 +601,54 @@ void renderScene(void) {
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
 		glUniform1f(loc, myMeshes[objId].mat.shininess);
 		pushMatrix(MODEL);
+
 		// """water"""
 		if (i == 0) {
-			//rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
+			glUniform1i(texMode_uniformId, wood);
+			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
 		}
 		// boat
-		if (i == 1)
+		else if (i == 1)
 		{
-			translate(MODEL, boat.pos[0] + 0.0f, boat.pos[2], boat.pos[1] + 0.0f);
+			glUniform1i(texMode_uniformId, wood);
+			translate(MODEL, boat.pos[0] - 0.0f, boat.pos[2], boat.pos[1] - 0.0f);
 			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
 		}
-		if (i == 0) { 
-			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f); 
-		} 
 		//base of 1st house 
 		else if (i == 2) {
+			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, (obstacles[0].center[0]/2) - 0.5f, (obstacles[0].center[2] / 2) - 0.5f, (obstacles[0].center[1] / 2) - 0.5f);
 		}
 		//roof of 1st house
 		else if (i == 3) {
-
+			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, 5.0f, 1.0f, 5.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
 		//base of 2nd house 
 		else if (i == 4) {
+			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, (obstacles[1].center[0] / 2) - 0.5f, (obstacles[1].center[2] / 2) - 0.5f, (obstacles[1].center[1] / 2) - 0.5f);
 		}
 		//roof of 2nd house 
 		else if (i == 5) {
+			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, 5.0f, 1.0f, -1.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
 		//base of 3rd house 
 		else if (i == 6) {
+			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, (obstacles[2].center[0] / 2) - 0.5f, (obstacles[2].center[2] / 2) - 0.5f, (obstacles[2].center[1] / 2) - 0.5f);
 		}
 		//roof of 3rd house 
 		else if (i == 7) {
+			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, -4.0f, 1.0f, -1.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
@@ -686,27 +723,38 @@ void renderScene(void) {
 			}
 		//handle of the paddle
 		else if (i == 22) {
+			glUniform1i(texMode_uniformId, wood);
 			translate(MODEL, 0.5f, 1.2f, 0.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//head1 of the paddle
 		else if (i == 23) {
+			glUniform1i(texMode_uniformId, wood);
 			translate(MODEL, -0.4f, 1.2f, 0.0f);
 			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//head2 of the paddle
 		else if (i == 24) {
+			glUniform1i(texMode_uniformId, wood);
 			translate(MODEL, 1.4f, 1.2f, 0.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//ball
-		else if (i == 19) {
+		else if (i == 25) {
 			//translate(MODEL, 0.5f, 0.5f, 0.5f);
 			translate(MODEL, boat.bb_center[0], boat.bb_center[2], boat.bb_center[1]);
 			
 			//translate(MODEL, fins[0].pos[0] - 2.0f, fins[0].pos[2], fins[0].pos[1] - 1.0f); // Adjust for fin's position
 			//rotate(MODEL, -fins[0].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
 			//translate(MODEL, 5.0f, 0.0f, 5.0f);
+			//rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+		}
+		//shark fin 2
+		else if (i == 26) {
+			translate(MODEL, fins[1].pos[0] - 4.0f, fins[1].pos[2], fins[1].pos[1] - 0.0f); // Adjust for fin's position
+			rotate(MODEL, -fins[1].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
+		
+			//translate(MODEL, 4.0f, 0.0f, -7.0f);
 			//rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 
@@ -745,6 +793,8 @@ void renderScene(void) {
 		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
 		glUniform1f(loc, myMeshes[objId].mat.shininess);
+		glUniform1i(texMode_uniformId, checker);
+
 		pushMatrix(MODEL);
 
 		translate(MODEL, fins[i].pos[0], fins[i].pos[2], fins[i].pos[1]); // Adjust for fin's position6
@@ -815,13 +865,14 @@ void renderScene(void) {
 	loadIdentity(VIEW);
 	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
 	RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
-	RenderText(shaderText, "AVT Light and Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3, 0.7f, 0.9f);
+	//RenderText(shaderText, "AVT Light and Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3, 0.7f, 0.9f);
 	popMatrix(PROJECTION);
 	popMatrix(VIEW);
 	popMatrix(MODEL);
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glutSwapBuffers();
 }
 
@@ -886,7 +937,9 @@ void processKeys(unsigned char key, int xx, int yy)
 		{
 			speedSwitch = 0;
 		}
-	
+	case 'f':
+		depthFog = !depthFog;
+		break;
 	}
 }
 
@@ -986,8 +1039,6 @@ void mouseWheel(int wheel, int direction, int x, int y) {
 //
 // Shader Stuff
 //
-
-
 GLuint setupShaders() {
 
 	// Shader for models
@@ -999,7 +1050,7 @@ GLuint setupShaders() {
 	glBindFragDataLocation(shader.getProgramIndex(), 0, "colorOut");
 	glBindAttribLocation(shader.getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
 	glBindAttribLocation(shader.getProgramIndex(), NORMAL_ATTRIB, "normal");
-	//glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
+	glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
 
 	glLinkProgram(shader.getProgramIndex());
 	printf("InfoLog for Model Rendering Shader\n%s\n\n", shaderText.getAllInfoLogs().c_str());
@@ -1025,9 +1076,13 @@ GLuint setupShaders() {
 	slExp_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sl_exp");		// Spotlight exponent
 	slExp_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "sl_exp2");	// Spotlight 2 exponent
 
+	depthFog_uniformId = glGetUniformLocation(shader.getProgramIndex(), "depthFog");	// Spotlight 2 exponent
+
 	tex_loc = glGetUniformLocation(shader.getProgramIndex(), "texmap");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
+
+	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode"); // different modes of texturing
 
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 
@@ -1051,7 +1106,6 @@ GLuint setupShaders() {
 //
 // Model loading and OpenGL setup
 //
-
 void init()
 {
 	MyMesh amesh;
@@ -1071,6 +1125,12 @@ void init()
 	camX = r * sin(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camZ = r * cos(alpha * 3.14f / 180.0f) * cos(beta * 3.14f / 180.0f);
 	camY = r * sin(beta * 3.14f / 180.0f);
+
+	//Texture Object definition
+	glGenTextures(3, TextureArray);
+	Texture2D_Loader(TextureArray, "stone.tga", 0);
+	Texture2D_Loader(TextureArray, "checker.png", 1);
+	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 
 	//values for the """water"""
 	float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
@@ -1421,11 +1481,11 @@ void init()
 	//shark fins
 	for (int i = 0; i < sharkfinNumber; i++)
 	{
-		amesh = createCone(1, 0.5, 3);
-		memcpy(amesh.mat.ambient, amb, 10 * sizeof(float));
-		memcpy(amesh.mat.diffuse, diff, 10 * sizeof(float));
-		memcpy(amesh.mat.specular, spec, 10 * sizeof(float));
-		memcpy(amesh.mat.emissive, emissive, 10 * sizeof(float));
+		amesh = createCone(1, 0.5f, 3);
+		memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
 		amesh.mat.shininess = shininess;
 		amesh.mat.texCount = texcount;
 		myMeshes.push_back(amesh);
