@@ -133,6 +133,9 @@ bool depthFog = 0;
 //number of objects to be drawn
 int numObj = 0;
 
+//pause variable
+bool isPaused = false;
+
 class Obstacle {
 public:
 	float center[3] = { 0.0f, 0.0f, 0.0f };
@@ -173,6 +176,7 @@ public:
 	float direction = 0.0f;
 	const float bb_radius = sqrt(0.75);
 	float bb_center[3] = { 0.5f, 0.5f, 0.5f };
+	int lives = 4;
 };
 
 Boat boat;
@@ -221,6 +225,19 @@ bool isColliding(float radius1, float *center1, float radius2, float *center2) {
 
 void handleCollisionFin(int index)
 {
+	//reduce number of lives on collision with sharks
+	boat.lives--;
+	//if life gets to or below 0, reset lives and position to starting location
+	if (boat.lives <= 0) {
+		boat.lives = 4;
+		boat.pos[0] = 0.0f;
+		boat.pos[1] = 0.0f;
+		boat.speed = 0.0f;
+		boat.acceleration = 0.0f;
+		boat.angle = 0.0f;
+		boat.direction = 0.0f;
+		return;
+	}
 	//vector that dictates what direction the objects will go when they collide
 	float centerVector[3] = { boat.bb_center[0] - fins[index].bb_center[0], boat.bb_center[1] - fins[index].bb_center[1], boat.bb_center[2] - fins[index].bb_center[2] };
 	normalize(centerVector);
@@ -847,6 +864,9 @@ void renderScene(void) {
 		objId++;
 	}
 
+	char lives_UI_MSG[11];
+	snprintf(lives_UI_MSG, 11, "lives: %d/4", boat.lives);
+
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 	glDisable(GL_DEPTH_TEST);
 	//the glyph contains transparent background colors and non-transparent for the actual character pixels. So we use the blending
@@ -863,7 +883,7 @@ void renderScene(void) {
 	pushMatrix(VIEW);
 	loadIdentity(VIEW);
 	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
-	//RenderText(shaderText, "This is a sample text", 25.0f, 25.0f, 1.0f, 0.5f, 0.8f, 0.2f);
+	RenderText(shaderText, lives_UI_MSG, 10.0f, 720.0f, 1.0f, 0.5f, 0.8f, 0.2f);
 	//RenderText(shaderText, "AVT Light and Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3, 0.7f, 0.9f);
 	popMatrix(PROJECTION);
 	popMatrix(VIEW);
@@ -886,10 +906,6 @@ void processKeys(unsigned char key, int xx, int yy)
 
 	case 27:
 		glutLeaveMainLoop();
-		break;
-
-	case 'p':
-		printf("Camera Spherical Coordinates (%f, %f, %f)\n", alpha, beta, r);
 		break;
 	case 'm': glEnable(GL_MULTISAMPLE); break;
 	case 'k': glDisable(GL_MULTISAMPLE); break;
@@ -949,6 +965,16 @@ void processKeys(unsigned char key, int xx, int yy)
 	case 'f':
 		depthFog = !depthFog;
 		break;
+	case 'p':
+		isPaused = !isPaused;
+		if (isPaused == true)
+		{
+			deltaT = 0;
+		}
+		else
+		{
+			deltaT = 0.05f;
+		}
 	}
 }
 
