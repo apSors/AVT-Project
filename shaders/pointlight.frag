@@ -99,7 +99,7 @@ void main() {
 
 	// Buoy lights (Point)
 	if( isBuoyLightsActive == true ){
-		for(int i = 0; i < DataIn.buoyLightDir.length; i++){
+		for(int i = 0; i <6; i++){
 			l = normalize(DataIn.buoyLightDir[i]);				 
 			distance = length(DataIn.buoyLightDir[i]);			
 			attenuation = 1.0 / (buoy_const_att + buoy_linear_att * distance + buoy_quad_att * distance * distance);
