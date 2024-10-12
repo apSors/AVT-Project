@@ -287,7 +287,7 @@ void timer(int value)
 	// Boat movement logic
 	boat.pos[0] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * cos(boat.direction * 3.14 / 180);
 	boat.pos[1] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * sin(boat.direction * 3.14 / 180);
-	
+
 	//pass deltaT to seconds
 	float dt = (1 / deltaT) / 1000.0f;
 	elapsedTime += dt;
@@ -770,23 +770,28 @@ void renderScene(void) {
 		else if (i == 21) {
 			translate(MODEL, (obstacles[12].center[0] / 1) - 0.0f, (obstacles[12].center[2] / 1) - 1.0f, (obstacles[12].center[1] / 1) - 0.0f);
 			}
-		//handle of the paddle
-		else if (i == 22) {
+		// Handle of the paddle (now the central shaft)
+		if (i == 22) {
 			glUniform1i(texMode_uniformId, wood);
-			translate(MODEL, 0.5f, 1.2f, 0.0f);
-			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+			translate(MODEL, boat.pos[0], boat.pos[2], boat.pos[1]);  
+			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);  
+			translate(MODEL, 0.5, 0.5f, 0.5f);  
+			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f); 
+			scale(MODEL, 2.0f, 2.0f, 1.0f);  
 		}
-		//head1 of the paddle
+		// Left handle of the paddle
 		else if (i == 23) {
 			glUniform1i(texMode_uniformId, wood);
-			translate(MODEL, -0.4f, 1.2f, 0.0f);
-			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f);
+			translate(MODEL, boat.pos[0], boat.pos[2], boat.pos[1]); 
+			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);  
+			translate(MODEL, -1.0f, 0.3f, 0.5f); 
 		}
-		//head2 of the paddle
+		// Right handle of the paddle
 		else if (i == 24) {
 			glUniform1i(texMode_uniformId, wood);
-			translate(MODEL, 1.4f, 1.2f, 0.0f);
-			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+			translate(MODEL, boat.pos[0], boat.pos[2], boat.pos[1]);  
+			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);  
+			translate(MODEL, 2.0f, 0.3f, 0.5f);  
 		}
 	
 		// Initial settings for fins' speed and direction:
