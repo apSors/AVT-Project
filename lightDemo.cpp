@@ -75,7 +75,7 @@ GLint buoyPos4_uniformId;			// Buoy 4 light world position
 GLint buoyPos5_uniformId;			// Buoy 5 light world position
 GLint buoyPos6_uniformId;			// Buoy 6 light world position
 
-GLint buoyConstantAttenuation_unirformId; 
+GLint buoyConstantAttenuation_unirformId;
 GLint buoyLinearAttenuation_unirformId;
 GLint buoyQuadraticAttenuation_unirformId;
 
@@ -111,9 +111,9 @@ float r = 10.0f;
 long myTime, timebase = 0, frame = 0;
 char s[32];
 
-float sunLightPos[4] = {-5.0f, 5.0f, 15.0f, 1.0f};		// Sun light world position
+float sunLightPos[4] = { -5.0f, 5.0f, 15.0f, 1.0f };		// Sun light world position
 
-float buoyLightPos[4] =	 { 10.0f, 5.0f, 10.0f, 1.0f };	// Buoy lights world position
+float buoyLightPos[4] = { 10.0f, 5.0f, 10.0f, 1.0f };	// Buoy lights world position
 float buoyLightPos2[4] = { -15.0f, 5.0f, -15.0f, 1.0f };
 float buoyLightPos3[4] = { 5.0f, 6.0f, -5.0f, 1.0f };
 float buoyLightPos4[4] = { -5.0f, 6.0f, 5.0f, 1.0f };
@@ -201,7 +201,7 @@ const int sharkfinNumber = 1;
 SharkFin fins[sharkfinNumber];
 
 const float duration = 30.0f;  // 30 seconds duration
-float elapsedTime = 0.0f;     
+float elapsedTime = 0.0f;
 int difficulty = 0;
 
 // Function to generate a random float value between min and max
@@ -209,7 +209,7 @@ float randomFloat(float min, float max) {
 	return min + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (max - min));
 }
 
-bool isColliding(float radius1, float *center1, float radius2, float *center2) {
+bool isColliding(float radius1, float* center1, float radius2, float* center2) {
 	// get the distance between the centers sqrt((x1-x2)^2 + (y1-y2)^2 + (z1-z2)^2)
 	float center_diff = sqrt(pow(center1[0] - center2[0], 2) + pow(center1[1] - center2[1], 2) + pow(center1[2] - center2[2], 2));
 	//get the total length of both radii combined
@@ -254,7 +254,7 @@ void handleCollisionStatic(int index)
 	//vector that dictates what direction the objects will go when they collide
 	float centerVector[3] = { boat.bb_center[0] - obstacles[index].center[0], boat.bb_center[1] - obstacles[index].center[1], boat.bb_center[2] - obstacles[index].center[2] };
 	normalize(centerVector);
-	
+
 	//relative speed of the collision expressed in a 3d vector
 	float relativeSpeed[3] = { boat.speed * cos(boat.direction), boat.speed * sin(boat.direction), 0.0f };
 
@@ -296,7 +296,7 @@ void timer(int value)
 	if (elapsedTime >= duration) {
 		difficulty = 1;
 	}
-	
+
 	for (int i = 0; i < sharkfinNumber; i++)
 	{
 		if ((abs(fins[i].pos[0] - fins[i].initialPos[0]) > 10.0f) || ((abs(fins[i].pos[1] - fins[i].initialPos[1])) > 10.0f))
@@ -310,9 +310,9 @@ void timer(int value)
 			fins[i].angle = atan(fins[i].slope);
 			fins[i].pos[0] = fins[i].initialPos[0];
 			fins[i].pos[1] = fins[i].initialPos[1];
-			fins[i].direction = -(180/3.1415) * atan2(boat.pos[1] - fins[i].pos[1], boat.pos[0] - fins[i].pos[0]);
+			fins[i].direction = -(180 / 3.1415) * atan2(boat.pos[1] - fins[i].pos[1], boat.pos[0] - fins[i].pos[0]);
 		}
-		
+
 
 		// Keep the angle between 0 and 360 degrees
 		if (fins[i].angle > 3.14) { fins[i].angle -= 3.14f; }
@@ -330,7 +330,7 @@ void timer(int value)
 			fins[i].pos[0] += (fins[i].slope * deltaT) * cos(fins[i].angle);  // X position
 			fins[i].pos[1] += (fins[i].slope * deltaT) * sin(fins[i].angle);  // Y position
 		}
-		
+
 
 		fins[i].bb_center[0] = fins[i].pos[0];
 		fins[i].bb_center[1] = fins[i].pos[1];
@@ -340,12 +340,12 @@ void timer(int value)
 	//boat moving forwards (press 'a' or 'd')
 	if ((boat.acceleration > 0) && (boat.speed >= 0))
 	{
-		boat.acceleration -= 3*decayy;
+		boat.acceleration -= 3 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
 	else if ((boat.acceleration < 0) && (boat.speed > 0))
 	{
-		boat.acceleration -= 2*decayy;
+		boat.acceleration -= 2 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 		if (boat.speed <= 0)
 		{
@@ -353,17 +353,17 @@ void timer(int value)
 			boat.speed = 0;
 		}
 	}
-	
+
 
 	//boat moving backwards (press 's')
 	if ((boat.acceleration < 0) && (boat.speed <= 0))
 	{
-		boat.acceleration += 3*decayy;
+		boat.acceleration += 3 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
 	else if ((boat.acceleration >= 0) && (boat.speed < 0))
 	{
-		boat.acceleration += 2*decayy;
+		boat.acceleration += 2 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 		if (boat.speed >= 0)
 		{
@@ -423,12 +423,12 @@ void timer(int value)
 	}
 	if ((boat.acceleration < 0) && (boat.speed <= 0)) //when the boat starts accelerating backwards
 	{
-		boat.acceleration += 7*decayy;
+		boat.acceleration += 7 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
 	else if ((boat.acceleration >= 0) && (boat.speed < 0)) // when the boat starts decelerating
 	{
-		boat.acceleration += 6*decayy;
+		boat.acceleration += 6 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 		if (boat.speed >= 0)
 		{
@@ -498,8 +498,8 @@ void renderScene(void) {
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
 
-	float headlightPos[4] = { boat.pos[0], 1.0f, boat.pos[1], 1.0f};			// Boat headlight world position (spotlight)
-	float headlightPos2[4] = { boat.pos[0], 1.0f, 1.0f + boat.pos[1], 1.0f};	// Boat headlight 2 world postion (spotlight)
+	float headlightPos[4] = { boat.pos[0], 1.0f, boat.pos[1], 1.0f };			// Boat headlight world position (spotlight)
+	float headlightPos2[4] = { boat.pos[0], 1.0f, 1.0f + boat.pos[1], 1.0f };	// Boat headlight 2 world postion (spotlight)
 
 	float headlightDir[4] = { 1.0f, 0.0f, 0.0f, 0.0f };		// Spotlight pointing diretion 
 	float headlightDir2[4] = { 1.0f, 0.0f, 0.0f, 0.0f };	// Spotlight 2 pointing diretion
@@ -550,85 +550,85 @@ void renderScene(void) {
 
 	glUseProgram(shader.getProgramIndex());
 
-		float res[4];		// Point light world position
-		float res2[4];		// Spotlight world position 
-		float res3[4];		// Spotlight 2 world position
-		float res4[4];		// Spotlight poiting diretion
-		float res5[4];		// Spotlight 2 poiting diretion
+	float res[4];		// Point light world position
+	float res2[4];		// Spotlight world position 
+	float res3[4];		// Spotlight 2 world position
+	float res4[4];		// Spotlight poiting diretion
+	float res5[4];		// Spotlight 2 poiting diretion
 
-		float res6[4];		// Buoy light world position
-		float res7[4];		// Buoy light world position
-		float res8[4];		// Buoy light world position
-		float res9[4];		// Buoy light world position
-		float res10[4];		// Buoy light world position
-		float res11[4];		// Buoy light world position
+	float res6[4];		// Buoy light world position
+	float res7[4];		// Buoy light world position
+	float res8[4];		// Buoy light world position
+	float res9[4];		// Buoy light world position
+	float res10[4];		// Buoy light world position
+	float res11[4];		// Buoy light world position
 
-		multMatrixPoint(VIEW, sunLightPos, res);		// sunLightPos definido em World Coord so is converted to eye space
-		
-		multMatrixPoint(VIEW, headlightPos, res2);		// headlightPos definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, headlightPos2, res3);		// headlightPos2 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, headlightDir, res4);		// headlightDir definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, headlightDir2, res5);		// headlightDir2 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, sunLightPos, res);		// sunLightPos definido em World Coord so is converted to eye space
 
-		multMatrixPoint(VIEW, buoyLightPos, res6);		// buoyLightPos definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, buoyLightPos2, res7);		// buoyLightPos2 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, buoyLightPos3, res8);		// buoyLightPos3 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, buoyLightPos4, res9);		// buoyLightPos4 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, buoyLightPos5, res10);	// buoyLightPos5 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, buoyLightPos6, res11);	// buoyLightPos6 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, headlightPos, res2);		// headlightPos definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, headlightPos2, res3);		// headlightPos2 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, headlightDir, res4);		// headlightDir definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, headlightDir2, res5);		// headlightDir2 definido em World Coord so is converted to eye space
 
-		glUniform4fv(sunPos_uniformId, 1, res);
+	multMatrixPoint(VIEW, buoyLightPos, res6);		// buoyLightPos definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos2, res7);		// buoyLightPos2 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos3, res8);		// buoyLightPos3 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos4, res9);		// buoyLightPos4 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos5, res10);	// buoyLightPos5 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos6, res11);	// buoyLightPos6 definido em World Coord so is converted to eye space
 
-		glUniform4fv(buoyPos_uniformId, 1, res6);
-		glUniform4fv(buoyPos2_uniformId, 1, res7);
-		glUniform4fv(buoyPos3_uniformId, 1, res8);
-		glUniform4fv(buoyPos4_uniformId, 1, res9);
-		glUniform4fv(buoyPos5_uniformId, 1, res10);
-		glUniform4fv(buoyPos6_uniformId, 1, res11);
+	glUniform4fv(sunPos_uniformId, 1, res);
 
-		glUniform1f(buoyConstantAttenuation_unirformId, buoyLightConstantAttenuation);
-		glUniform1f(buoyLinearAttenuation_unirformId, buoyLightLinearAttenuation);
-		glUniform1f(buoyQuadraticAttenuation_unirformId, buoyLightQuadraticAttenuation);
+	glUniform4fv(buoyPos_uniformId, 1, res6);
+	glUniform4fv(buoyPos2_uniformId, 1, res7);
+	glUniform4fv(buoyPos3_uniformId, 1, res8);
+	glUniform4fv(buoyPos4_uniformId, 1, res9);
+	glUniform4fv(buoyPos5_uniformId, 1, res10);
+	glUniform4fv(buoyPos6_uniformId, 1, res11);
 
-		glUniform4fv(headlightPos_uniformId, 1, res2);
-		glUniform4fv(headlightPos2_uniformId, 1, res3);
-		glUniform4fv(headlightDir_uniformId, 1, res4);
-		glUniform4fv(headlightDir2_uniformId, 1, res5);
+	glUniform1f(buoyConstantAttenuation_unirformId, buoyLightConstantAttenuation);
+	glUniform1f(buoyLinearAttenuation_unirformId, buoyLightLinearAttenuation);
+	glUniform1f(buoyQuadraticAttenuation_unirformId, buoyLightQuadraticAttenuation);
 
-		glUniform1f(headlightAngle_uniformId, headlightAngle);
-		glUniform1f(headlightExp_uniformId, headlightExp);
+	glUniform4fv(headlightPos_uniformId, 1, res2);
+	glUniform4fv(headlightPos2_uniformId, 1, res3);
+	glUniform4fv(headlightDir_uniformId, 1, res4);
+	glUniform4fv(headlightDir2_uniformId, 1, res5);
 
-		glUniform1f(isSunActive_uniformId, isSunActive);
-		glUniform1f(isBuoyLightsActive_uniformId, isBuoyLightsActive);
-		glUniform1f(isHeadlightsActive_uniformId, isHeadlightsActive);
+	glUniform1f(headlightAngle_uniformId, headlightAngle);
+	glUniform1f(headlightExp_uniformId, headlightExp);
 
-		glUniform1f(depthFog_uniformId, depthFog);
+	glUniform1f(isSunActive_uniformId, isSunActive);
+	glUniform1f(isBuoyLightsActive_uniformId, isBuoyLightsActive);
+	glUniform1f(isHeadlightsActive_uniformId, isHeadlightsActive);
 
-		int objId = 0;
+	glUniform1f(depthFog_uniformId, depthFog);
 
-		//Associar os Texture Units aos Objects Texture
-		//stone.tga loaded in TU0; checker.tga loaded in TU1;  lightwood.tga loaded in TU2
+	int objId = 0;
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+	//Associar os Texture Units aos Objects Texture
+	//stone.tga loaded in TU0; checker.tga loaded in TU1;  lightwood.tga loaded in TU2
 
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
 
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
 
 
-		int stone = 0;		// IDs das texturas
-		int checker = 1;
-		int wood = 2;
+	int stone = 0;		// IDs das texturas
+	int checker = 1;
+	int wood = 2;
 
-		//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
-		glUniform1i(tex_loc, stone);
-		glUniform1i(tex_loc1, checker);
-		glUniform1i(tex_loc2, wood);
+	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
+	glUniform1i(tex_loc, stone);
+	glUniform1i(tex_loc1, checker);
+	glUniform1i(tex_loc2, wood);
 
-		glUniform1i(texMode_uniformId, wood);
+	glUniform1i(texMode_uniformId, wood);
 
 	for (int i = 0; i < numObj; ++i) {
 
@@ -659,7 +659,7 @@ void renderScene(void) {
 		else if (i == 2) {
 			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, (obstacles[0].center[0]/2) - 0.5f, (obstacles[0].center[2] / 2) - 0.5f, (obstacles[0].center[1] / 2) - 0.5f);
+			translate(MODEL, (obstacles[0].center[0] / 2) - 0.5f, (obstacles[0].center[2] / 2) - 0.5f, (obstacles[0].center[1] / 2) - 0.5f);
 		}
 		//roof of 1st house
 		else if (i == 3) {
@@ -769,31 +769,38 @@ void renderScene(void) {
 		//6th buoy 
 		else if (i == 21) {
 			translate(MODEL, (obstacles[12].center[0] / 1) - 0.0f, (obstacles[12].center[2] / 1) - 1.0f, (obstacles[12].center[1] / 1) - 0.0f);
-			}
-		// Handle of the paddle (now the central shaft)
+		}
+		// Handle of the paddle
 		if (i == 22) {
 			glUniform1i(texMode_uniformId, wood);
-			translate(MODEL, boat.pos[0], boat.pos[2], boat.pos[1]);  
-			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);  
-			translate(MODEL, 0.5, 0.5f, 0.5f);  
-			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f); 
-			scale(MODEL, 2.0f, 2.0f, 1.0f);  
+			translate(MODEL, boat.pos[0], boat.pos[2], boat.pos[1]);
+			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
+			translate(MODEL, 0.5, 0.5f, 0.5f);
+			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+			rotate(MODEL, 90.0f, 1.0f, 0.0f, 0.0f);
+			scale(MODEL, 2.0f, 2.0f, 1.0f);
 		}
 		// Left handle of the paddle
 		else if (i == 23) {
 			glUniform1i(texMode_uniformId, wood);
-			translate(MODEL, boat.pos[0], boat.pos[2], boat.pos[1]); 
-			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);  
-			translate(MODEL, -1.0f, 0.3f, 0.5f); 
+			translate(MODEL, boat.pos[0], boat.pos[2], boat.pos[1]);
+			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
+			translate(MODEL, 0.35f, 0.5f, -1.2f);
+			rotate(MODEL, 180.0f, 1.0f, 0.0f, 1.0f);
+			scale(MODEL, 0.7, 0.1, 0.3f);
+
 		}
 		// Right handle of the paddle
 		else if (i == 24) {
 			glUniform1i(texMode_uniformId, wood);
-			translate(MODEL, boat.pos[0], boat.pos[2], boat.pos[1]);  
-			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);  
-			translate(MODEL, 2.0f, 0.3f, 0.5f);  
+			translate(MODEL, boat.pos[0], boat.pos[2], boat.pos[1]);
+			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
+			translate(MODEL, 0.35f, 0.5f, 1.5f);
+			rotate(MODEL, 180.0f, 1.0f, 0.0f, 1.0f);
+			scale(MODEL, 0.7, 0.1, 0.3f);
+
 		}
-	
+
 		// Initial settings for fins' speed and direction:
 		for (int j = 0; j < sharkfinNumber; j++)
 		{
@@ -1474,7 +1481,7 @@ void init()
 	myMeshes.push_back(amesh);
 	numObj++;
 	//head1
-	amesh = createCone(0.25, 0.25, 2);
+	amesh = createCube();
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
 	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
@@ -1484,7 +1491,7 @@ void init()
 	myMeshes.push_back(amesh);
 	numObj++;
 	//head2
-	amesh = createCone(0.25, 0.25, 2);
+	amesh = createCube();
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
 	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
