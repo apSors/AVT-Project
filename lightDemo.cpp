@@ -961,6 +961,17 @@ void processKeys(unsigned char key, int xx, int yy)
 	case 'f':
 		depthFog = !depthFog;
 		break;
+
+	case 'r': // Restart
+		boat.pos[0] = 0.0f;
+		boat.pos[1] = 0.0f;
+		boat.speed = 0.0f;
+		boat.acceleration = 0.0f;
+		boat.angle = 0.0f;
+		boat.direction = 0.0f;
+		//boat.lives = 4;
+		elapsedTime = 0;
+		break;
 	}
 }
 
