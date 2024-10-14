@@ -866,6 +866,7 @@ void renderScene(void) {
 
 	char lives_UI_MSG[11];
 	snprintf(lives_UI_MSG, 11, "lives: %d/4", boat.lives);
+	const char pause_UI_MSG[8] = "Paused!";
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 	glDisable(GL_DEPTH_TEST);
@@ -883,14 +884,19 @@ void renderScene(void) {
 	pushMatrix(VIEW);
 	loadIdentity(VIEW);
 	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
-	RenderText(shaderText, lives_UI_MSG, 10.0f, 720.0f, 1.0f, 0.5f, 0.8f, 0.2f);
-	//RenderText(shaderText, "AVT Light and Text Rendering Demo", 440.0f, 570.0f, 0.5f, 0.3, 0.7f, 0.9f);
+	if (isPaused)
+	{
+		RenderText(shaderText, pause_UI_MSG, 500.0f, 400.0f, 3.0f, 0.3, 0.7f, 0.9f);
+	}
+	else 
+	{
+		RenderText(shaderText, lives_UI_MSG, 10.0f, 720.0f, 1.0f, 0.5f, 0.8f, 0.2f);
+	}
 	popMatrix(PROJECTION);
 	popMatrix(VIEW);
 	popMatrix(MODEL);
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
-
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glutSwapBuffers();
 }
