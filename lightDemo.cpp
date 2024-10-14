@@ -38,6 +38,7 @@
 using namespace std;
 
 #define CAPTION "AVT Demo: Phong Shading and Text rendered with FreeType"
+#define frand()			((float)rand()/RAND_MAX)
 int WindowHandle = 0;
 int WinX = 1024, WinY = 768;
 
@@ -92,9 +93,9 @@ GLint isHeadlightsActive_uniformId;
 
 GLint depthFog_uniformId;	// Fog controller
 
-GLuint TextureArray[3];
+GLuint TextureArray[4];
 
-GLint tex_loc, tex_loc1, tex_loc2;
+GLint tex_loc, tex_loc1, tex_loc2, tex_loc3;
 GLint texMode_uniformId;
 
 // Camera Position
@@ -132,6 +133,21 @@ bool depthFog = 0;
 
 //number of objects to be drawn
 int numObj = 0;
+
+int fireworks = 0;
+
+
+typedef struct {
+	float	life;		// vida
+	float	fade;		// fade
+	float	r, g, b;    // color
+	GLfloat x, y, z;    // posi‹o
+	GLfloat vx, vy, vz; // velocidade 
+	GLfloat ax, ay, az; // acelera‹o
+} Particle;
+
+Particle particula[1500];
+int dead_num_particles = 0;
 
 class Obstacle {
 public:
@@ -274,6 +290,63 @@ void handleCollisionStatic(int index)
 	//boat.direction = (atan2(centerVector[0], centerVector[2])*180)/3.1415;
 	//boat.angle = (atan2(centerVector[0], centerVector[2]) * 180) / 3.1415;
 }
+
+void updateParticles()
+{
+	int i;
+	float h;
+
+	/* Método de Euler de integração de eq. diferenciais ordinárias
+	h representa o step de tempo; dv/dt = a; dx/dt = v; e conhecem-se os valores iniciais de x e v */
+
+	//h = 0.125f;
+	h = 0.033;
+	if (fireworks) {
+
+		for (i = 0; i < 1500; i++)
+		{
+			particula[i].x += (h * particula[i].vx);
+			particula[i].y += (h * particula[i].vy);
+			particula[i].z += (h * particula[i].vz);
+			particula[i].vx += (h * particula[i].ax);
+			particula[i].vy += (h * particula[i].ay);
+			particula[i].vz += (h * particula[i].az);
+			particula[i].life -= particula[i].fade;
+		}
+	}
+}
+
+void iniParticles(void)
+{
+	GLfloat v, theta, phi;
+	int i;
+
+	for (i = 0; i < 1500; i++)
+	{
+		v = 0.8 * frand() + 0.2;
+		phi = frand() * 3.14159265;
+		theta = 2.0 * frand() * 3.14159265;
+
+		particula[i].x = 0.0f;
+		particula[i].y = 10.0f;
+		particula[i].z = 0.0f;
+		particula[i].vx = v * cos(theta) * sin(phi);
+		particula[i].vy = v * cos(phi);
+		particula[i].vz = v * sin(theta) * sin(phi);
+		particula[i].ax = 0.1f; /* simular um pouco de vento */
+		particula[i].ay = -0.15f; /* simular a aceleração da gravidade */
+		particula[i].az = 0.0f;
+
+		/* tom amarelado que vai ser multiplicado pela textura que varia entre branco e preto */
+		particula[i].r = 0.882f;
+		particula[i].g = 0.552f;
+		particula[i].b = 0.211f;
+
+		particula[i].life = 1.0f;		/* vida inicial */
+		particula[i].fade = 0.0025f;	    /* step de decréscimo da vida para cada iteração */
+	}
+}
+
 
 void timer(int value)
 {
@@ -493,6 +566,9 @@ void renderScene(void) {
 	GLint loc;
 
 	FrameCount++;
+	float pos[3], right[3], up[3];
+	float particle_color[4];
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	// load identity matrices
 	loadIdentity(VIEW);
@@ -607,7 +683,7 @@ void renderScene(void) {
 	int objId = 0;
 
 	//Associar os Texture Units aos Objects Texture
-	//stone.tga loaded in TU0; checker.tga loaded in TU1;  lightwood.tga loaded in TU2
+	//stone.tga loaded in TU0; checker.tga loaded in TU1; lightwood.tga loaded in TU2; particle.tga associated to TU3
 
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
@@ -618,17 +694,23 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
 
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[3]);  
+
 
 	int stone = 0;		// IDs das texturas
 	int checker = 1;
 	int wood = 2;
+	int particle = 3;
 
 	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
 	glUniform1i(tex_loc, stone);
 	glUniform1i(tex_loc1, checker);
 	glUniform1i(tex_loc2, wood);
+	glUniform1i(tex_loc3, particle);
 
 	glUniform1i(texMode_uniformId, wood);
+
 
 	for (int i = 0; i < numObj; ++i) {
 
@@ -645,7 +727,7 @@ void renderScene(void) {
 
 		// """water"""
 		if (i == 0) {
-			glUniform1i(texMode_uniformId, wood);
+			glUniform1i(texMode_uniformId, particle);
 			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
 		}
 		// boat
@@ -800,7 +882,7 @@ void renderScene(void) {
 			scale(MODEL, 0.7, 0.1, 0.3f);
 
 		}
-
+	
 		// Initial settings for fins' speed and direction:
 		for (int j = 0; j < sharkfinNumber; j++)
 		{
@@ -824,6 +906,69 @@ void renderScene(void) {
 		popMatrix(MODEL);
 		objId++;
 	}
+	
+
+	if (fireworks) {
+
+		updateParticles();
+
+		// draw fireworks particles
+		objId = 6;  //quad for particle
+
+		glBindTexture(GL_TEXTURE_2D, TextureArray[3]); //particle.tga associated to TU3 
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		glDepthMask(GL_FALSE);  //Depth Buffer Read Only
+
+		glUniform1i(texMode_uniformId, particle); // draw modulated textured particles 
+
+		for (int i = 0; i < 1500; i++)
+		{
+			if (particula[i].life > 0.0f) /* só desenha as que ainda estão vivas */
+			{
+
+				/* A vida da partícula representa o canal alpha da cor. Como o blend está activo a cor final é a soma da cor rgb do fragmento multiplicada pelo
+				alpha com a cor do pixel destino */
+
+				particle_color[0] = particula[i].r;
+				particle_color[1] = particula[i].g;
+				particle_color[2] = particula[i].b;
+				particle_color[3] = particula[i].life;
+
+				// send the material - diffuse color modulated with texture
+				loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+				glUniform4fv(loc, 1, particle_color);
+
+				pushMatrix(MODEL);
+				translate(MODEL, particula[i].x, particula[i].y, particula[i].z);
+
+				// send matrices to OGL
+				computeDerivedMatrix(PROJ_VIEW_MODEL);
+				glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+				glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+				computeNormalMatrix3x3();
+				glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+				glBindVertexArray(myMeshes[objId].vao);
+				glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+				popMatrix(MODEL);
+			}
+			else dead_num_particles++;
+		}
+
+		glDepthMask(GL_TRUE); //make depth buffer again writeable
+
+		if (dead_num_particles == 1500) {
+			fireworks = 0;
+			dead_num_particles = 0;
+			printf("All particles dead\n");
+		}
+
+	}
+
+
 
 	for (int i = 0; i < sharkfinNumber; i++)
 	{
@@ -883,7 +1028,7 @@ void renderScene(void) {
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 
-	glBindTexture(GL_TEXTURE_2D, 0);
+	glBindTexture(GL_TEXTURE_2D, 3);
 	glutSwapBuffers();
 }
 
@@ -899,7 +1044,10 @@ void processKeys(unsigned char key, int xx, int yy)
 	case 27:
 		glutLeaveMainLoop();
 		break;
-
+	case 'e':
+		fireworks = 1;
+		iniParticles();
+		break;
 	case 'p':
 		printf("Camera Spherical Coordinates (%f, %f, %f)\n", alpha, beta, r);
 		break;
@@ -1125,6 +1273,7 @@ GLuint setupShaders() {
 	tex_loc = glGetUniformLocation(shader.getProgramIndex(), "texmap");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
+	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
 
 	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode"); // different modes of texturing
 
@@ -1171,10 +1320,11 @@ void init()
 	camY = r * sin(beta * 3.14f / 180.0f);
 
 	//Texture Object definition
-	glGenTextures(3, TextureArray);
+	glGenTextures(4, TextureArray);
 	Texture2D_Loader(TextureArray, "stone.tga", 0);
 	Texture2D_Loader(TextureArray, "checker.png", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
+	Texture2D_Loader(TextureArray, "particle.tga", 3);
 
 	//values for the """water"""
 	float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
@@ -1524,6 +1674,12 @@ void init()
 		amesh.mat.texCount = texcount;
 		myMeshes.push_back(amesh);
 	}
+
+	// create geometry and VAO of the quad for particles
+	//objId = 6;
+	amesh = createQuad(2, 2);
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
 
 	/*// create geometry and VAO of the pawn
 	amesh = createPawn();
