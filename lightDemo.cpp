@@ -142,9 +142,11 @@ public:
 	float radius = 0.0f;
 };
 
-// number of obstacles that have bounding boxes
-const int numObstacle = 13;
+//
+const int houseNumber = 30 * 2 * 2; //*2 because 1 house is 1 roof + 1 base and another because its 2 sides of the race
 
+// number of obstacles that have bounding boxes
+const int numObstacle = houseNumber + 2*2; //2*2 because we add 2 houses in the back manually
 Obstacle obstacles[numObstacle];
 
 int activeCam = 0;
@@ -172,8 +174,8 @@ public:
 	float speed = 0.0f;
 	float acceleration = 0.0f;
 	float pos[3] = { 0.0f, 0.0f, 0.0f };
-	float angle = 0.0f;
-	float direction = 0.0f;
+	float angle = 90.0f;
+	float direction = 90.0f;
 	const float bb_radius = sqrt(0.75);
 	float bb_center[3] = { 0.5f, 0.5f, 0.5f };
 	int lives = 4;
@@ -672,84 +674,58 @@ void renderScene(void) {
 			translate(MODEL, boat.pos[0] - 0.0f, boat.pos[2], boat.pos[1] - 0.0f);
 			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
 		}
-		//base of 1st house 
+		//handle of the paddle
 		else if (i == 2) {
-			glUniform1i(texMode_uniformId, stone);
-			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, (obstacles[0].center[0]/2) - 0.5f, (obstacles[0].center[2] / 2) - 0.5f, (obstacles[0].center[1] / 2) - 0.5f);
+			glUniform1i(texMode_uniformId, wood);
+			translate(MODEL, 0.5f, 1.2f, 0.0f);
+			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
-		//roof of 1st house
+		//head1 of the paddle
 		else if (i == 3) {
 			glUniform1i(texMode_uniformId, wood);
-			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, 5.0f, 1.0f, 5.0f);
-			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+			translate(MODEL, -0.4f, 1.2f, 0.0f);
+			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f);
 		}
-		//base of 2nd house 
+		//head2 of the paddle
 		else if (i == 4) {
-			glUniform1i(texMode_uniformId, stone);
-			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, (obstacles[1].center[0] / 2) - 0.5f, (obstacles[1].center[2] / 2) - 0.5f, (obstacles[1].center[1] / 2) - 0.5f);
+			glUniform1i(texMode_uniformId, wood);
+			translate(MODEL, 1.4f, 1.2f, 0.0f);
+			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
-		//roof of 2nd house 
+		//house 1 base
 		else if (i == 5) {
-			glUniform1i(texMode_uniformId, wood);
+			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, 5.0f, 1.0f, -1.0f);
-			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+			translate(MODEL, (obstacles[houseNumber + 1].center[0] / 2) - 0.5f, (obstacles[houseNumber + 1].center[2] / 2) - 0.5f, (obstacles[houseNumber + 1].center[1] / 2) - 0.5f);
 		}
-		//base of 3rd house 
+		//house 1 roof
 		else if (i == 6) {
-			glUniform1i(texMode_uniformId, stone);
+			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, (obstacles[2].center[0] / 2) - 0.5f, (obstacles[2].center[2] / 2) - 0.5f, (obstacles[2].center[1] / 2) - 0.5f);
+			translate(MODEL, (obstacles[houseNumber + 1].center[0] / 2), (obstacles[houseNumber + 1].center[2]), (obstacles[houseNumber + 1].center[1] / 2));
+			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
-		//roof of 3rd house 
+		//house 2 base
 		else if (i == 7) {
-			glUniform1i(texMode_uniformId, wood);
+			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, -4.0f, 1.0f, -1.0f);
-			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+			translate(MODEL, (obstacles[houseNumber + 2].center[0] / 2) - 0.5f, (obstacles[houseNumber + 2].center[2] / 2) - 0.5f, (obstacles[houseNumber + 2].center[1] / 2) - 0.5f);
 		}
-		//base of 4th house 
+		//house 2 roof
 		else if (i == 8) {
-			glUniform1i(texMode_uniformId, stone);
-			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, (obstacles[3].center[0] / 2) - 0.5f, (obstacles[3].center[2] / 2) - 0.5f, (obstacles[3].center[1] / 2) - 0.5f);
-		}
-		//roof of 4th house 
-		else if (i == 9) {
 			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, 7.5f, 1.0f, 1.5f);
+			translate(MODEL, (obstacles[houseNumber + 2].center[0] / 2), (obstacles[houseNumber + 2].center[2]), (obstacles[houseNumber + 2].center[1] / 2));
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
-		//base of 5th house 
-		else if (i == 10) {
-			glUniform1i(texMode_uniformId, stone);
-			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, (obstacles[4].center[0] / 2) - 0.5f, (obstacles[4].center[2] / 2) - 0.5f, (obstacles[4].center[1] / 2) - 0.5f);
-		}
-		//roof of 5th house 
-		else if (i == 11) {
-			glUniform1i(texMode_uniformId, wood);
-			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, -4.0f, 1.0f, 1.5f);
-			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
-		}
-		//base of 6th house 
-		else if (i == 12) {
-			glUniform1i(texMode_uniformId, stone);
-			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, (obstacles[5].center[0] / 2) - 0.5f, (obstacles[5].center[2] / 2) - 0.5f, (obstacles[5].center[1] / 2) - 0.5f);
-		}
-		//roof of 6th house 
-		else if (i == 13) {
-			glUniform1i(texMode_uniformId, wood);
-			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, -1.0f, 1.0f, 3.5f);
-			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
-		}
+
+		
+		
+		
+		
+		
+		
+		/*
 		//base of 7th house 
 		else if (i == 14) {
 			glUniform1i(texMode_uniformId, stone);
@@ -767,44 +743,7 @@ void renderScene(void) {
 		else if (i == 16) {
 			translate(MODEL, (obstacles[7].center[0] / 1) - 0.0f, (obstacles[7].center[2] / 1) - 1.0f, (obstacles[7].center[1] / 1) - 0.0f);
 		}
-		//2nd buoy 
-		else if (i == 17) {
-			translate(MODEL, (obstacles[8].center[0] / 1) - 0.0f, (obstacles[8].center[2] / 1) - 1.0f, (obstacles[8].center[1] / 1) - 0.0f);
-		}
-		//3rd buoy 
-		else if (i == 18) {
-			translate(MODEL, (obstacles[9].center[0] / 1) - 0.0f, (obstacles[9].center[2] / 1) - 1.0f, (obstacles[9].center[1] / 1) - 0.0f);
-		}
-		//4th buoy 
-		else if (i == 19) {
-			translate(MODEL, (obstacles[10].center[0] / 1) - 0.0f, (obstacles[10].center[2] / 1) - 1.0f, (obstacles[10].center[1] / 1) - 0.0f);
-		}
-		//5th buoy 
-		else if (i == 20) {
-			translate(MODEL, (obstacles[11].center[0] / 1) - 0.0f, (obstacles[11].center[2] / 1) - 1.0f, (obstacles[11].center[1] / 1) - 0.0f);
-		}
-		//6th buoy 
-		else if (i == 21) {
-			translate(MODEL, (obstacles[12].center[0] / 1) - 0.0f, (obstacles[12].center[2] / 1) - 1.0f, (obstacles[12].center[1] / 1) - 0.0f);
-			}
-		//handle of the paddle
-		else if (i == 22) {
-			glUniform1i(texMode_uniformId, wood);
-			translate(MODEL, 0.5f, 1.2f, 0.0f);
-			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
-		}
-		//head1 of the paddle
-		else if (i == 23) {
-			glUniform1i(texMode_uniformId, wood);
-			translate(MODEL, -0.4f, 1.2f, 0.0f);
-			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f);
-		}
-		//head2 of the paddle
-		else if (i == 24) {
-			glUniform1i(texMode_uniformId, wood);
-			translate(MODEL, 1.4f, 1.2f, 0.0f);
-			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
-		}
+		*/
 	
 		// Initial settings for fins' speed and direction:
 		for (int j = 0; j < sharkfinNumber; j++)
@@ -823,6 +762,51 @@ void renderScene(void) {
 		// Render mesh
 		glBindVertexArray(myMeshes[objId].vao);
 
+		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		objId++;
+	}
+
+	for (int j = 0; j < houseNumber; j++) //*2 because a house is a base and a roof
+	{
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[objId].mat.shininess);
+		glUniform1i(texMode_uniformId, checker);
+
+		pushMatrix(MODEL);
+		//if base
+		if ((j % 2) == 0)
+		{
+			glUniform1i(texMode_uniformId, stone);
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, (obstacles[j].center[0] / 2) - 0.5f, (obstacles[j].center[2] / 2) - 0.5f, (obstacles[j].center[1] / 2) - 0.5f);
+		}
+		//else roof
+		else
+		{
+			glUniform1i(texMode_uniformId, wood);
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, (obstacles[j].center[0] / 2), (obstacles[j].center[2]), (obstacles[j].center[1] / 2) - 1.0f);
+			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+		}
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(myMeshes[objId].vao);
 		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 
@@ -1220,275 +1204,6 @@ void init()
 	myMeshes.push_back(amesh);
 	numObj++;
 
-	//lets try making a house
-	//base of the house 1
-	amesh = createCube();
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	//roof of the house 1
-	amesh = createCone(0.5, 1.0, 4);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	obstacles[0].center[0] = 9.0f + 1.0f;
-	obstacles[0].center[1] = 9.0f + 1.0f;
-	obstacles[0].center[2] = 0.0f + 1.0f;
-	obstacles[0].radius = 1.0f; //sqrt(0.75 * 4);
-
-	//antoher one
-	//base of the house 2
-	amesh = createCube();
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	//roof of the house 2
-	amesh = createCone(0.5, 1.0, 4);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	obstacles[1].center[0] = 9.0f + 1.0f;
-	obstacles[1].center[1] = -3.0f + 1.0f;
-	obstacles[1].center[2] = 0.0f + 1.0f;
-	obstacles[1].radius = 1.0f; //sqrt(0.75 * 4);
-
-	//and antoher one
-	//base of the house 3
-	amesh = createCube();
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	//roof of the house 3
-	amesh = createCone(0.5, 1.0, 4);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	obstacles[2].center[0] = -9.0f + 1.0f;
-	obstacles[2].center[1] = -3.0f + 1.0f;
-	obstacles[2].center[2] = 0.0f + 1.0f;
-	obstacles[2].radius = 1.0f; //sqrt(0.75 * 4);
-
-	//and antoher one
-	//base of the house 4
-	amesh = createCube();
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	//roof of the house 4
-	amesh = createCone(0.5, 1.0, 4);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	obstacles[3].center[0] = 14.0f + 1.0f;
-	obstacles[3].center[1] = 2.0f + 1.0f;
-	obstacles[3].center[2] = 0.0f + 1.0f;
-	obstacles[3].radius = 1.0f; //sqrt(0.75 * 4);
-
-	//and antoher one
-	//base of the house 5
-	amesh = createCube();
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	//roof of the house 5
-	amesh = createCone(0.5, 1.0, 4);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	obstacles[4].center[0] = -9.0f + 1.0f;
-	obstacles[4].center[1] = 2.0f + 1.0f;
-	obstacles[4].center[2] = 0.0f + 1.0f;
-	obstacles[4].radius = 1.0f; //sqrt(0.75 * 4);
-
-	//and antoher one
-	//base of the house 6
-	amesh = createCube();
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	//roof of the house 6
-	amesh = createCone(0.5, 1.0, 4);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	obstacles[5].center[0] = -3.0f + 1.0f;
-	obstacles[5].center[1] = 6.0f + 1.0f;
-	obstacles[5].center[2] = 0.0f + 1.0f;
-	obstacles[5].radius = 1.0f; //sqrt(0.75 * 4);
-
-	//and antoher one
-	//base of the house 7
-	amesh = createCube();
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	//roof of the house 7
-	amesh = createCone(0.5, 1.0, 4);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	obstacles[6].center[0] = -9.0f + 1.0f;
-	obstacles[6].center[1] = 13.0f + 1.0f;
-	obstacles[6].center[2] = 0.0f + 1.0f;
-	obstacles[6].radius = 1.0f; //sqrt(0.75 * 4);
-
-	//lets make the buoys
-	//buoy 1
-	amesh = createCone(3.0, 0.3, 100);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	obstacles[7].center[0] = 7.0f;
-	obstacles[7].center[1] = -5.0f;
-	obstacles[7].center[2] = 0.0f + 1.0f;
-	obstacles[7].radius = 0.2f;
-	//buoy 2
-	amesh = createCone(3.0, 0.3, 100);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	obstacles[8].center[0] = 3.0f;
-	obstacles[8].center[1] = 13.0f;
-	obstacles[8].center[2] = 0.0f + 1.0f;
-	obstacles[8].radius = 0.2f;
-	//buoy 3
-	amesh = createCone(3.0, 0.3, 100);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	obstacles[9].center[0] = -8.0f;
-	obstacles[9].center[1] = -6.0f;
-	obstacles[9].center[2] = 0.0f + 1.0f;
-	obstacles[9].radius = 0.2f;
-	//buoy 4
-	amesh = createCone(3.0, 0.3, 100);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	obstacles[10].center[0] = 20.0f;
-	obstacles[10].center[1] = 13.0f;
-	obstacles[10].center[2] = 0.0f + 1.0f;
-	obstacles[10].radius = 0.2f;
-	//buoy 5
-	amesh = createCone(3.0, 0.3, 100);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	obstacles[11].center[0] = 19.0f;
-	obstacles[11].center[1] = 18.0f;
-	obstacles[11].center[2] = 0.0f + 1.0f;
-	obstacles[11].radius = 0.2f;
-	//buoy 6
-	amesh = createCone(3.0, 0.3, 100);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
-	obstacles[12].center[0] = 15.0f;
-	obstacles[12].center[1] = 20.0f;
-	obstacles[12].center[2] = 0.0f + 1.0f;
-	obstacles[12].radius = 0.2f;
-
-
 	//lets do the paddle for the boat
 	//handle
 	amesh = createCylinder(1.5f, 0.05f, 20);
@@ -1520,6 +1235,154 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	numObj++;
+
+	//houses
+	//base of the house 1
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//roof of the house 1
+	amesh = createCone(0.5, 1.0, 4);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[houseNumber + 1].center[0] = 3.0f + 1.0f;
+	obstacles[houseNumber + 1].center[1] = -5.0f + 1.0f;
+	obstacles[houseNumber + 1].center[2] = 0.0f + 1.0f;
+	obstacles[houseNumber + 1].radius = 1.0f; //sqrt(0.75 * 4);
+
+	//base of the house 1
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//roof of the house 1
+	amesh = createCone(0.5, 1.0, 4);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[houseNumber + 2].center[0] = -3.0f + 1.0f;
+	obstacles[houseNumber + 2].center[1] = -5.0f + 1.0f;
+	obstacles[houseNumber + 2].center[2] = 0.0f + 1.0f;
+	obstacles[houseNumber + 2].radius = 1.0f; //sqrt(0.75 * 4);
+
+
+
+	for (int i = 0; i < houseNumber/2; i++)
+	{
+		//base
+		amesh = createCube();
+		memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+		amesh.mat.shininess = shininess;
+		amesh.mat.texCount = texcount;
+		myMeshes.push_back(amesh);
+		//roof
+		amesh = createCone(0.5, 1.0, 4);
+		memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+		amesh.mat.shininess = shininess;
+		amesh.mat.texCount = texcount;
+		myMeshes.push_back(amesh);
+		obstacles[i].center[0] = 10.0f + 1.0f;
+		obstacles[i].center[1] = -5.0f + 2*i + 1.0f;
+		obstacles[i].center[2] = 0.0f + 1.0f;
+		obstacles[i].radius = 1.0f; //sqrt(0.75 * 4);
+	}
+	for (int i = 0; i < houseNumber/2; i++)
+	{
+		//base
+		amesh = createCube();
+		memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+		amesh.mat.shininess = shininess;
+		amesh.mat.texCount = texcount;
+		myMeshes.push_back(amesh);
+		//roof
+		amesh = createCone(0.5, 1.0, 4);
+		memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+		amesh.mat.shininess = shininess;
+		amesh.mat.texCount = texcount;
+		myMeshes.push_back(amesh);
+		obstacles[i + houseNumber / 2].center[0] = -10.0f + 1.0f;
+		obstacles[i + houseNumber / 2].center[1] = -5.0f + 2 * i + 1.0f;
+		obstacles[i + houseNumber / 2].center[2] = 0.0f + 1.0f;
+		obstacles[i + houseNumber / 2].radius = 1.0f; //sqrt(0.75 * 4);
+	}
+
+	/*
+	//lets try making a house
+	//base of the house 1
+	amesh = createCube();
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	//roof of the house 1
+	amesh = createCone(0.5, 1.0, 4);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[0].center[0] = 9.0f + 1.0f;
+	obstacles[0].center[1] = 9.0f + 1.0f;
+	obstacles[0].center[2] = 0.0f + 1.0f;
+	obstacles[0].radius = 1.0f; //sqrt(0.75 * 4);
+	//buoy 6
+	amesh = createCone(3.0, 0.3, 100);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	numObj++;
+	obstacles[12].center[0] = 15.0f;
+	obstacles[12].center[1] = 20.0f;
+	obstacles[12].center[2] = 0.0f + 1.0f;
+	obstacles[12].radius = 0.2f;
+	*/
+
+	
 
 	//shark fins
 	for (int i = 0; i < sharkfinNumber; i++)
