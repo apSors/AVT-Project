@@ -144,7 +144,7 @@ public:
 
 //
 const int houseNumber = 30 * 2 * 2; //*2 because 1 house is 1 roof + 1 base and another because its 2 sides of the race
-const int buoyNumber = 1;
+const int buoyNumber = 30;
 
 // number of obstacles that have bounding boxes
 const int obstacleNumber = houseNumber + buoyNumber +2*2; //+2*2 because we add 2 houses in the back manually
@@ -356,6 +356,11 @@ void timer(int value)
 		fins[i].bb_center[1] = fins[i].pos[1];
 	}
 
+	if (boat.acceleration > 5.0f)
+	{
+		boat.acceleration = 5.0f;
+	}
+
 	//boat acceleration reduction
 	//boat moving forwards (press 'a' or 'd')
 	if ((boat.acceleration > 0) && (boat.speed >= 0))
@@ -391,6 +396,11 @@ void timer(int value)
 			boat.speed = 0;
 		}
 	}
+	if (boat.speed > 10.0f)
+	{
+		boat.speed = 10.0f;
+	}
+	
 
 	boat.bb_center[0] = boat.pos[0] + (sqrt(2) / 2) * cos(((boat.direction * 3.1415) / 180) + 3.1415 / 4);
 	boat.bb_center[1] = boat.pos[1] + (sqrt(2) / 2) * sin(((boat.direction * 3.1415) / 180) + 3.1415 / 4);
@@ -872,7 +882,7 @@ void renderScene(void) {
 		pushMatrix(MODEL);
 
 		glUniform1i(texMode_uniformId, 4);
-		translate(MODEL, obstacles[obstacleNumber - 1].center[0], obstacles[obstacleNumber - 1].center[2], obstacles[obstacleNumber - 1].center[1]);
+		translate(MODEL, obstacles[obstacleNumber - buoyNumber + i].center[0], obstacles[obstacleNumber - buoyNumber + i].center[2], obstacles[obstacleNumber - buoyNumber + i].center[1]);
 
 		// send matrices to OGL
 		computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -1401,18 +1411,22 @@ void init()
 	//buoys come last because they will be translucid
 	diff[3] = 0.5f;
 	//buoy 1
-	amesh = createCone(3.0, 0.3, 100);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	obstacles[obstacleNumber-1].center[0] = 0.0f;
-	obstacles[obstacleNumber-1].center[1] = 5.0f;
-	obstacles[obstacleNumber-1].center[2] = 0.0f;
-	obstacles[obstacleNumber-1].radius = 0.2f;
+	for (int i = 0; i < buoyNumber; i++)
+	{
+		amesh = createCone(3.0, 0.3, 100);
+		memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+		amesh.mat.shininess = shininess;
+		amesh.mat.texCount = texcount;
+		myMeshes.push_back(amesh);
+		obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 0.0f;
+		obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 5.0f + 2*i;
+		obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
+		obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.2f;
+	}
+	
 
 	/*
 	//lets try making a house
