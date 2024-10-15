@@ -144,10 +144,11 @@ public:
 
 //
 const int houseNumber = 30 * 2 * 2; //*2 because 1 house is 1 roof + 1 base and another because its 2 sides of the race
+const int buoyNumber = 1;
 
 // number of obstacles that have bounding boxes
-const int numObstacle = houseNumber + 2*2; //2*2 because we add 2 houses in the back manually
-Obstacle obstacles[numObstacle];
+const int obstacleNumber = houseNumber + buoyNumber +2*2; //+2*2 because we add 2 houses in the back manually
+Obstacle obstacles[obstacleNumber];
 
 int activeCam = 0;
 
@@ -403,7 +404,7 @@ void timer(int value)
 		}
 	}
 	//check for collision in static objects
-	for (int i = 0; i < numObstacle; i++)
+	for (int i = 0; i < obstacleNumber; i++)
 	{
 		if (isColliding(boat.bb_radius, boat.bb_center, obstacles[i].radius, obstacles[i].center))
 		{
@@ -518,10 +519,10 @@ void renderScene(void) {
 	loadIdentity(MODEL);
 
 	float headlightPos[4] = { boat.pos[0], 1.0f, boat.pos[1], 1.0f};			// Boat headlight world position (spotlight)
-	float headlightPos2[4] = { boat.pos[0], 1.0f, 1.0f + boat.pos[1], 1.0f};	// Boat headlight 2 world postion (spotlight)
+	float headlightPos2[4] = { -1.0f + boat.pos[0], 1.0f, boat.pos[1], 1.0f};	// Boat headlight 2 world postion (spotlight)
 
-	float headlightDir[4] = { 1.0f, 0.0f, 0.0f, 0.0f };		// Spotlight pointing diretion 
-	float headlightDir2[4] = { 1.0f, 0.0f, 0.0f, 0.0f };	// Spotlight 2 pointing diretion
+	float headlightDir[4] = { 0.0f, 0.0f, 1.0f, 0.0f };		// Spotlight pointing diretion 
+	float headlightDir2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };	// Spotlight 2 pointing diretion
 
 	float headlightAngle = 0.9;		// Spotlight angle (0-0.9999)
 
@@ -569,86 +570,87 @@ void renderScene(void) {
 
 	glUseProgram(shader.getProgramIndex());
 
-		float res[4];		// Point light world position
-		float res2[4];		// Spotlight world position 
-		float res3[4];		// Spotlight 2 world position
-		float res4[4];		// Spotlight poiting diretion
-		float res5[4];		// Spotlight 2 poiting diretion
+	float res[4];		// Point light world position
+	float res2[4];		// Spotlight world position 
+	float res3[4];		// Spotlight 2 world position
+	float res4[4];		// Spotlight poiting diretion
+	float res5[4];		// Spotlight 2 poiting diretion
 
-		float res6[4];		// Buoy light world position
-		float res7[4];		// Buoy light world position
-		float res8[4];		// Buoy light world position
-		float res9[4];		// Buoy light world position
-		float res10[4];		// Buoy light world position
-		float res11[4];		// Buoy light world position
+	float res6[4];		// Buoy light world position
+	float res7[4];		// Buoy light world position
+	float res8[4];		// Buoy light world position
+	float res9[4];		// Buoy light world position
+	float res10[4];		// Buoy light world position
+	float res11[4];		// Buoy light world position
 
-		multMatrixPoint(VIEW, sunLightPos, res);		// sunLightPos definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, sunLightPos, res);		// sunLightPos definido em World Coord so is converted to eye space
 		
-		multMatrixPoint(VIEW, headlightPos, res2);		// headlightPos definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, headlightPos2, res3);		// headlightPos2 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, headlightDir, res4);		// headlightDir definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, headlightDir2, res5);		// headlightDir2 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, headlightPos, res2);		// headlightPos definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, headlightPos2, res3);		// headlightPos2 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, headlightDir, res4);		// headlightDir definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, headlightDir2, res5);		// headlightDir2 definido em World Coord so is converted to eye space
 
-		multMatrixPoint(VIEW, buoyLightPos, res6);		// buoyLightPos definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, buoyLightPos2, res7);		// buoyLightPos2 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, buoyLightPos3, res8);		// buoyLightPos3 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, buoyLightPos4, res9);		// buoyLightPos4 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, buoyLightPos5, res10);	// buoyLightPos5 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, buoyLightPos6, res11);	// buoyLightPos6 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos, res6);		// buoyLightPos definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos2, res7);		// buoyLightPos2 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos3, res8);		// buoyLightPos3 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos4, res9);		// buoyLightPos4 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos5, res10);	// buoyLightPos5 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos6, res11);	// buoyLightPos6 definido em World Coord so is converted to eye space
 
-		glUniform4fv(sunPos_uniformId, 1, res);
+	glUniform4fv(sunPos_uniformId, 1, res);
 
-		glUniform4fv(buoyPos_uniformId, 1, res6);
-		glUniform4fv(buoyPos2_uniformId, 1, res7);
-		glUniform4fv(buoyPos3_uniformId, 1, res8);
-		glUniform4fv(buoyPos4_uniformId, 1, res9);
-		glUniform4fv(buoyPos5_uniformId, 1, res10);
-		glUniform4fv(buoyPos6_uniformId, 1, res11);
+	glUniform4fv(buoyPos_uniformId, 1, res6);
+	glUniform4fv(buoyPos2_uniformId, 1, res7);
+	glUniform4fv(buoyPos3_uniformId, 1, res8);
+	glUniform4fv(buoyPos4_uniformId, 1, res9);
+	glUniform4fv(buoyPos5_uniformId, 1, res10);
+	glUniform4fv(buoyPos6_uniformId, 1, res11);
 
-		glUniform1f(buoyConstantAttenuation_unirformId, buoyLightConstantAttenuation);
-		glUniform1f(buoyLinearAttenuation_unirformId, buoyLightLinearAttenuation);
-		glUniform1f(buoyQuadraticAttenuation_unirformId, buoyLightQuadraticAttenuation);
+	glUniform1f(buoyConstantAttenuation_unirformId, buoyLightConstantAttenuation);
+	glUniform1f(buoyLinearAttenuation_unirformId, buoyLightLinearAttenuation);
+	glUniform1f(buoyQuadraticAttenuation_unirformId, buoyLightQuadraticAttenuation);
 
-		glUniform4fv(headlightPos_uniformId, 1, res2);
-		glUniform4fv(headlightPos2_uniformId, 1, res3);
-		glUniform4fv(headlightDir_uniformId, 1, res4);
-		glUniform4fv(headlightDir2_uniformId, 1, res5);
+	glUniform4fv(headlightPos_uniformId, 1, res2);
+	glUniform4fv(headlightPos2_uniformId, 1, res3);
+	glUniform4fv(headlightDir_uniformId, 1, res4);
+	glUniform4fv(headlightDir2_uniformId, 1, res5);
 
-		glUniform1f(headlightAngle_uniformId, headlightAngle);
-		glUniform1f(headlightExp_uniformId, headlightExp);
+	glUniform1f(headlightAngle_uniformId, headlightAngle);
+	glUniform1f(headlightExp_uniformId, headlightExp);
 
-		glUniform1f(isSunActive_uniformId, isSunActive);
-		glUniform1f(isBuoyLightsActive_uniformId, isBuoyLightsActive);
-		glUniform1f(isHeadlightsActive_uniformId, isHeadlightsActive);
+	glUniform1f(isSunActive_uniformId, isSunActive);
+	glUniform1f(isBuoyLightsActive_uniformId, isBuoyLightsActive);
+	glUniform1f(isHeadlightsActive_uniformId, isHeadlightsActive);
 
-		glUniform1f(depthFog_uniformId, depthFog);
+	glUniform1f(depthFog_uniformId, depthFog);
 
-		int objId = 0;
+	int objId = 0;
 
-		//Associar os Texture Units aos Objects Texture
-		//stone.tga loaded in TU0; checker.tga loaded in TU1;  lightwood.tga loaded in TU2
+	//Associar os Texture Units aos Objects Texture
+	//stone.tga loaded in TU0; checker.tga loaded in TU1;  lightwood.tga loaded in TU2
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
 
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
 
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
 
 
-		int stone = 0;		// IDs das texturas
-		int checker = 1;
-		int wood = 2;
+	int stone = 0;		// IDs das texturas
+	int checker = 1;
+	int wood = 2;
 
-		//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
-		glUniform1i(tex_loc, stone);
-		glUniform1i(tex_loc1, checker);
-		glUniform1i(tex_loc2, wood);
+	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
+	glUniform1i(tex_loc, stone);
+	glUniform1i(tex_loc1, checker);
+	glUniform1i(tex_loc2, wood);
 
-		glUniform1i(texMode_uniformId, wood);
+	glUniform1i(texMode_uniformId, wood);
 
+	//render the first few opaque objects (water,boat, paddle, 2 houses...)
 	for (int i = 0; i < numObj; ++i) {
 
 		// send the material
@@ -769,6 +771,7 @@ void renderScene(void) {
 		objId++;
 	}
 
+	//render the houses on eachside based on houseNumber
 	for (int j = 0; j < houseNumber; j++) //*2 because a house is a base and a roof
 	{
 		// send the material
@@ -813,7 +816,9 @@ void renderScene(void) {
 		popMatrix(MODEL);
 		objId++;
 	}
+	objId = objId + houseNumber;
 
+	//render the shark fins based on sharkfinNumber
 	for (int i = 0; i < sharkfinNumber; i++)
 	{
 		// send the material
@@ -847,6 +852,44 @@ void renderScene(void) {
 		popMatrix(MODEL);
 		objId++;
 	}
+
+	//render the translucent buoys
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	for (int i = 0; i < buoyNumber; i++)
+	{
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[objId].mat.shininess);
+		glUniform1i(texMode_uniformId, checker);
+
+		pushMatrix(MODEL);
+
+		glUniform1i(texMode_uniformId, 4);
+		translate(MODEL, obstacles[obstacleNumber - 1].center[0], obstacles[obstacleNumber - 1].center[2], obstacles[obstacleNumber - 1].center[1]);
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(myMeshes[objId].vao);
+		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		objId++;
+	}
+	glDisable(GL_BLEND);
 
 	char lives_UI_MSG[11];
 	snprintf(lives_UI_MSG, 11, "lives: %d/4", boat.lives);
@@ -1178,7 +1221,7 @@ void init()
 	int texcount = 0;
 
 	//create the water quad
-	amesh = createQuad(100000.0f, 100000.0f);
+	amesh = createQuad(10000.0f, 10000.0f);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
 	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
@@ -1289,6 +1332,7 @@ void init()
 
 
 
+	//make the houses on the left side
 	for (int i = 0; i < houseNumber/2; i++)
 	{
 		//base
@@ -1314,6 +1358,7 @@ void init()
 		obstacles[i].center[2] = 0.0f + 1.0f;
 		obstacles[i].radius = 1.0f; //sqrt(0.75 * 4);
 	}
+	//make the houses on the right side
 	for (int i = 0; i < houseNumber/2; i++)
 	{
 		//base
@@ -1339,6 +1384,35 @@ void init()
 		obstacles[i + houseNumber / 2].center[2] = 0.0f + 1.0f;
 		obstacles[i + houseNumber / 2].radius = 1.0f; //sqrt(0.75 * 4);
 	}
+
+	//shark fins
+	for (int i = 0; i < sharkfinNumber; i++)
+	{
+		amesh = createCone(1, 0.5f, 3);
+		memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+		memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+		memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+		amesh.mat.shininess = shininess;
+		amesh.mat.texCount = texcount;
+		myMeshes.push_back(amesh);
+	}
+
+	//buoys come last because they will be translucid
+	diff[3] = 0.5f;
+	//buoy 1
+	amesh = createCone(3.0, 0.3, 100);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	obstacles[obstacleNumber-1].center[0] = 0.0f;
+	obstacles[obstacleNumber-1].center[1] = 5.0f;
+	obstacles[obstacleNumber-1].center[2] = 0.0f;
+	obstacles[obstacleNumber-1].radius = 0.2f;
 
 	/*
 	//lets try making a house
@@ -1381,21 +1455,6 @@ void init()
 	obstacles[12].center[2] = 0.0f + 1.0f;
 	obstacles[12].radius = 0.2f;
 	*/
-
-	
-
-	//shark fins
-	for (int i = 0; i < sharkfinNumber; i++)
-	{
-		amesh = createCone(1, 0.5f, 3);
-		memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-		memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-		memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-		amesh.mat.shininess = shininess;
-		amesh.mat.texCount = texcount;
-		myMeshes.push_back(amesh);
-	}
 
 	/*// create geometry and VAO of the pawn
 	amesh = createPawn();
