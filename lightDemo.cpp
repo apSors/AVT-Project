@@ -131,7 +131,7 @@ bool isHeadlightsActive = 0;
 bool depthFog = 0;
 
 //number of objects to be drawn
-int numObj = 0;
+int objectNumber = 0;
 
 //pause variable
 bool isPaused = false;
@@ -309,9 +309,11 @@ void timer(int value)
 	boat.pos[1] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * sin(boat.direction * 3.14 / 180);
 	
 	//pass deltaT to seconds
-	float dt = (1 / deltaT) / 1000.0f;
+	//printf("%f\n", elapsedTime);
+	float dt = (1 / deltaT) / 600.0f;
 	elapsedTime += dt;
 
+	// After 30 seconds, set progress to 1
 	// After 30 seconds, set progress to 1
 	if (elapsedTime >= duration) {
 		difficulty = 1;
@@ -661,7 +663,7 @@ void renderScene(void) {
 	glUniform1i(texMode_uniformId, wood);
 
 	//render the first few opaque objects (water,boat, paddle, 2 houses...)
-	for (int i = 0; i < numObj; ++i) {
+	for (int i = 0; i < objectNumber; ++i) {
 
 		// send the material
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
@@ -903,6 +905,16 @@ void renderScene(void) {
 
 	char lives_UI_MSG[11];
 	snprintf(lives_UI_MSG, 11, "lives: %d/4", boat.lives);
+
+	char timer_UI_MSG[20];
+	int hours, minutes, seconds;
+	
+	seconds = int(elapsedTime);
+	minutes = seconds / 60;
+	hours = seconds / 3600;
+	seconds -= minutes * 60;
+	minutes -= hours * 60;
+	snprintf(timer_UI_MSG, 20,"H:%d M:%d S:%d", hours, minutes, seconds);
 	const char pause_UI_MSG[8] = "Paused!";
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
@@ -929,6 +941,7 @@ void renderScene(void) {
 	{
 		RenderText(shaderText, lives_UI_MSG, 10.0f, 720.0f, 1.0f, 0.5f, 0.8f, 0.2f);
 	}
+	RenderText(shaderText, timer_UI_MSG, 680.0f, 720.0f, 1.0f, 0.5f, 0.8f, 0.2f);
 	popMatrix(PROJECTION);
 	popMatrix(VIEW);
 	popMatrix(MODEL);
@@ -1239,7 +1252,7 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	numObj++;
+	objectNumber++;
 
 	//value for the boat
 	diff[0] = 0.8f;
@@ -1255,7 +1268,7 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	numObj++;
+	objectNumber++;
 
 	//lets do the paddle for the boat
 	//handle
@@ -1267,7 +1280,7 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	numObj++;
+	objectNumber++;
 	//head1
 	amesh = createCone(0.25, 0.25, 2);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
@@ -1277,7 +1290,7 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	numObj++;
+	objectNumber++;
 	//head2
 	amesh = createCone(0.25, 0.25, 2);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
@@ -1287,7 +1300,7 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	numObj++;
+	objectNumber++;
 
 	//houses
 	//base of the house 1
@@ -1299,7 +1312,7 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	numObj++;
+	objectNumber++;
 	//roof of the house 1
 	amesh = createCone(0.5, 1.0, 4);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
@@ -1309,7 +1322,7 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	numObj++;
+	objectNumber++;
 	obstacles[houseNumber + 1].center[0] = 3.0f + 1.0f;
 	obstacles[houseNumber + 1].center[1] = -5.0f + 1.0f;
 	obstacles[houseNumber + 1].center[2] = 0.0f + 1.0f;
@@ -1324,7 +1337,7 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	numObj++;
+	objectNumber++;
 	//roof of the house 1
 	amesh = createCone(0.5, 1.0, 4);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
@@ -1334,7 +1347,7 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	numObj++;
+	objectNumber++;
 	obstacles[houseNumber + 2].center[0] = -3.0f + 1.0f;
 	obstacles[houseNumber + 2].center[1] = -5.0f + 1.0f;
 	obstacles[houseNumber + 2].center[2] = 0.0f + 1.0f;
@@ -1421,57 +1434,42 @@ void init()
 		amesh.mat.texCount = texcount;
 		myMeshes.push_back(amesh);
 
-		switch (i % 7) {
+		switch (i % 6) {
 		case 0:
 			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = -5.0f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 5.0f + 6 * (i-0);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 5.0f + 5 * (i-0);
 			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
 			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
 			break;
 		case 1:
 			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = -0.5f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 10.0f + 6 * (i-1);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 10.0f + 5 * (i-1);
 			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
 			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
 			break;
 		case 2:
 			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 4.0f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 15.0f + 6 * (i-2);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 15.0f + 5 * (i-2);
 			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
 			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
 			break;
 		case 3:
-			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 4.0f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 20.0f + 6 * (i-3);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 1.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 20.0f + 5 * (i-3);
 			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
 			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
 			break;
 		case 4:
-			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 9.0f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 25.0f + 6 * (i-4);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 7.75f;
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 20.0f + 5 * (i-4);
 			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
 			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
 			break;
 		case 5:
 			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = -3.5f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 15.0f + 6 * (i - 5);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 15.0f + 5 * (i - 5);
 			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
 			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
-			break;
-		case 6:
-			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = -1.25f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 20.0f + 6 * (i - 6);
-			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
-			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
-			break;
-		case 7:
-			//stuff
-			break;
-		case 8:
-			//stuff
-			break;
-		case 9:
-			//stuff
 			break;
 		}
 	}
@@ -1488,7 +1486,7 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	numObj++;
+	objectNumber++;
 	//roof of the house 1
 	amesh = createCone(0.5, 1.0, 4);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
@@ -1498,7 +1496,7 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	numObj++;
+	objectNumber++;
 	obstacles[0].center[0] = 9.0f + 1.0f;
 	obstacles[0].center[1] = 9.0f + 1.0f;
 	obstacles[0].center[2] = 0.0f + 1.0f;
@@ -1512,7 +1510,7 @@ void init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
-	numObj++;
+	objectNumber++;
 	obstacles[12].center[0] = 15.0f;
 	obstacles[12].center[1] = 20.0f;
 	obstacles[12].center[2] = 0.0f + 1.0f;
