@@ -90,7 +90,8 @@ GLint isSunActive_uniformId;
 GLint isBuoyLightsActive_uniformId;
 GLint isHeadlightsActive_uniformId;
 
-GLint depthFog_uniformId;	// Fog controller
+GLint depthFog_uniformId;	// Fog Depth controller
+GLint fogEnable_uniformId;	// Fog controller
 
 GLuint TextureArray[3];
 
@@ -129,6 +130,7 @@ bool isBuoyLightsActive = 0;
 bool isHeadlightsActive = 0;
 
 bool depthFog = 0;
+bool isFogEnabled = true;
 
 //number of objects to be drawn
 int numObj = 0;
@@ -603,6 +605,7 @@ void renderScene(void) {
 		glUniform1f(isHeadlightsActive_uniformId, isHeadlightsActive);
 
 		glUniform1f(depthFog_uniformId, depthFog);
+		glUniform1f(fogEnable_uniformId, isFogEnabled);
 
 		int objId = 0;
 
@@ -949,6 +952,9 @@ void processKeys(unsigned char key, int xx, int yy)
 	case 'f':
 		depthFog = !depthFog;
 		break;
+	case 'b':
+		isFogEnabled = !isFogEnabled;
+		break;
 	}
 }
 
@@ -1097,7 +1103,8 @@ GLuint setupShaders() {
 	isBuoyLightsActive_uniformId = glGetUniformLocation(shader.getProgramIndex(), "isBuoyLightsActive");	// Buoy lights bool
 	isHeadlightsActive_uniformId = glGetUniformLocation(shader.getProgramIndex(), "isHeadlightsActive");	// Boat headlights bool
 
-	depthFog_uniformId = glGetUniformLocation(shader.getProgramIndex(), "depthFog");	// Spotlight 2 exponent
+	depthFog_uniformId = glGetUniformLocation(shader.getProgramIndex(), "depthFog");		// Fog Depth controller
+	fogEnable_uniformId = glGetUniformLocation(shader.getProgramIndex(), "isFogEnabled");	// Fog controller
 
 	tex_loc = glGetUniformLocation(shader.getProgramIndex(), "texmap");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");

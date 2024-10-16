@@ -38,6 +38,8 @@ uniform sampler2D texmap1;
 uniform sampler2D texmap2;
 
 uniform bool depthFog;
+uniform bool isFogEnabled;
+
 uniform int texMode;
 
 in Data {
@@ -179,6 +181,11 @@ void main() {
 		//finalColor = vec4(max(intensity*mat.diffuse.rgb + totalSpecular.rgb, mat.ambient.rgb), mat.diffuse.a);
 	}
 
-	// Apply fog by blending the final color with the fog color based on fog amount
-	colorOut = vec4(mix(fogColor, finalColor.rgb, 1.0 - fogAmount), finalColor.a);
+	if(isFogEnabled){
+		// Apply fog by blending the final color with the fog color based on fog amount
+		colorOut = vec4(mix(fogColor, finalColor.rgb, 1.0 - fogAmount), finalColor.a);
+	}
+	else{
+		colorOut = finalColor;
+	}
 }
