@@ -143,8 +143,8 @@ public:
 };
 
 //
-const int houseNumber = 30 * 2 * 2; //*2 because 1 house is 1 roof + 1 base and another because its 2 sides of the race
-const int buoyNumber = 30;
+const int houseNumber = 1000 * 2 * 2; //*2 because 1 house is 1 roof + 1 base and another because its 2 sides of the race
+const int buoyNumber = 1000;
 
 // number of obstacles that have bounding boxes
 const int obstacleNumber = houseNumber + buoyNumber +2*2; //+2*2 because we add 2 houses in the back manually
@@ -1410,10 +1410,9 @@ void init()
 
 	//buoys come last because they will be translucid
 	diff[3] = 0.5f;
-	//buoy 1
 	for (int i = 0; i < buoyNumber; i++)
 	{
-		amesh = createCone(3.0, 0.3, 100);
+		amesh = createCone(5.0, 1.4, 100);
 		memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 		memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
 		memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
@@ -1421,10 +1420,60 @@ void init()
 		amesh.mat.shininess = shininess;
 		amesh.mat.texCount = texcount;
 		myMeshes.push_back(amesh);
-		obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 0.0f;
-		obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 5.0f + 2*i;
-		obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
-		obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.2f;
+
+		switch (i % 7) {
+		case 0:
+			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = -5.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 5.0f + 6 * (i-0);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
+			break;
+		case 1:
+			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = -0.5f;
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 10.0f + 6 * (i-1);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
+			break;
+		case 2:
+			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 4.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 15.0f + 6 * (i-2);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
+			break;
+		case 3:
+			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 4.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 20.0f + 6 * (i-3);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
+			break;
+		case 4:
+			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 9.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 25.0f + 6 * (i-4);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
+			break;
+		case 5:
+			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = -3.5f;
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 15.0f + 6 * (i - 5);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
+			break;
+		case 6:
+			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = -1.25f;
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 20.0f + 6 * (i - 6);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
+			break;
+		case 7:
+			//stuff
+			break;
+		case 8:
+			//stuff
+			break;
+		case 9:
+			//stuff
+			break;
+		}
 	}
 	
 
