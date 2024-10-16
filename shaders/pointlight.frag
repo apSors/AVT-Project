@@ -37,6 +37,15 @@ uniform sampler2D texmap;
 uniform sampler2D texmap1;
 uniform sampler2D texmap2;
 
+uniform	sampler2D texUnitDiff;
+uniform	sampler2D texUnitDiff1;
+uniform	sampler2D texUnitSpec;
+uniform	sampler2D texUnitNormalMap;
+
+uniform bool normalMap;  //for normal mapping
+uniform bool specularMap;
+uniform uint diffMapCount;
+
 uniform bool depthFog;
 uniform int texMode;
 
@@ -59,14 +68,23 @@ float attenuation;
 float spotEffect;
 vec3 sd;
 
+vec4 diff, auxSpec;
+
 void main() {
+
+	vec4 spec = vec4(0.0);
+	vec3 n;
 
 	float dist; // camera to point distance
 	vec4 totalDiffuse = vec4(0.0);
 	vec4 totalSpecular = vec4(0.0);
 	vec4 texel, texel1; 
 
-	vec3 n = normalize(DataIn.normal);
+	if(normalMap)
+		n = normalize(2.0 * texture(texUnitNormalMap, DataIn.tex_coord).rgb - 1.0);  //normal in tangent space
+	else
+		n = normalize(DataIn.normal);
+
 	vec3 e = normalize(DataIn.eye);
 
 	// Compute distance used in fog equations
@@ -82,6 +100,24 @@ void main() {
 	float fogAmount = clamp(pow(dist * 0.03, 0.75), 0.0, 1.0);  // Increase density by modifying the exponent and multiplier
 	vec3 fogColor = vec3(0.5, 0.6, 0.7);  // Color of the fog
 
+
+	if(mat.texCount == 0){
+		diff = mat.diffuse;
+		auxSpec = mat.specular;
+	}
+	else {
+		if(diffMapCount == 0)
+			diff = mat.diffuse;
+		else if(diffMapCount == 1)
+			diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord);
+		else
+			diff = mat.diffuse * texture(texUnitDiff, DataIn.tex_coord) * texture(texUnitDiff1, DataIn.tex_coord);
+
+		if(specularMap) 
+			auxSpec = mat.specular * texture(texUnitSpec, DataIn.tex_coord);
+		else
+			auxSpec = mat.specular;
+	}
 	// Light 1 - Sun light (Directional)
 	if( isSunActive == true ){
 		l = normalize(DataIn.sunLightDir);  
@@ -90,9 +126,10 @@ void main() {
 		if (intensity > 0.0) {
 			h = normalize(l + e);					
 			intSpec = max(dot(h, n), 0.0);	
-			totalSpecular += mat.specular * pow(intSpec, mat.shininess); 
+			totalSpecular += auxSpec * pow(intSpec, mat.shininess); 
 		}
-		totalDiffuse += intensity * mat.diffuse;  
+		
+		totalDiffuse += intensity * diff;  
 	}
 	
 
@@ -108,9 +145,9 @@ void main() {
 			if (intensity > 0.0) {
 				h = normalize(l + e);
 				intSpec = max(dot(h, n), 0.0);
-				totalSpecular += mat.specular * pow(intSpec, mat.shininess) * attenuation;
+				totalSpecular += auxSpec * pow(intSpec, mat.shininess) * attenuation;
 			}
-			totalDiffuse += intensity * mat.diffuse;
+			totalDiffuse += intensity * diff;
 		}
 	}
 	
@@ -129,9 +166,9 @@ void main() {
 			if (intensity > 0.0) {
 				h = normalize(l + e);
 				intSpec = max(dot(h, n), 0.0);
-				totalSpecular += mat.specular * pow(intSpec, mat.shininess) * attenuation;
+				totalSpecular += auxSpec * pow(intSpec, mat.shininess) * attenuation;
 			}
-			totalDiffuse += intensity * mat.diffuse;
+			totalDiffuse += intensity * diff;
 		}
 
 		// Boat headlight 2 (Spotlight)
@@ -146,9 +183,9 @@ void main() {
 			if (intensity > 0.0) {
 				h = normalize(l + e);
 				intSpec = max(dot(h, n), 0.0);
-				totalSpecular += mat.specular * pow(intSpec, mat.shininess) * attenuation;
+				totalSpecular += auxSpec * pow(intSpec, mat.shininess) * attenuation;
 			}
-			totalDiffuse += intensity * mat.diffuse;
+			totalDiffuse += intensity * diff;
 		}
 	}
 

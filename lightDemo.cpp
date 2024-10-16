@@ -15,10 +15,14 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <fstream>
 
 // include GLEW to access OpenGL 3.3 functions
 #include <GL/glew.h>
 
+// assimp include files. These three are usually needed.
+#include "assimp/Importer.hpp"	//OO version Header!
+#include "assimp/scene.h"
 
 // GLUT is the toolkit to interface with the OS
 #include <GL/freeglut.h>
@@ -34,6 +38,7 @@
 
 #include "avtFreeType.h"
 #include "Texture_Loader.h"
+#include <meshFromAssimp.h>
 
 using namespace std;
 
@@ -52,6 +57,10 @@ const string font_name = "fonts/arial.ttf";
 
 //Vector with meshes
 vector<struct MyMesh> myMeshes;
+vector<struct MyMesh> boatMeshes;
+
+// Create an instance of the Importer class
+Assimp::Importer importer;
 
 //External array storage defined in AVTmathLib.cpp
 
@@ -96,6 +105,17 @@ GLuint TextureArray[3];
 
 GLint tex_loc, tex_loc1, tex_loc2;
 GLint texMode_uniformId;
+
+GLuint* textureIds;  // Array of Texture Objects
+
+GLint normalMap_loc;
+GLint specularMap_loc;
+GLint diffMapCount_loc;
+
+bool normalMapKey = TRUE; // by default if there is a normal map then bump effect is implemented. press key "b" to enable/disable normal mapping 
+const aiScene* scene; // the global Assimp scene object
+float scaleFactor; // scale factor for the Assimp model to fit in the window
+char model_dir[50] = "cottage";
 
 // Camera Position
 float camX, camY, camZ;
@@ -275,6 +295,112 @@ void handleCollisionStatic(int index)
 	//boat.angle = (atan2(centerVector[0], centerVector[2]) * 180) / 3.1415;
 }
 
+void aiRecursive_render(const aiNode* nd, vector<struct MyMesh>& myMeshes, GLuint*& textureIds)
+{
+	GLint loc;
+
+	// Get node transformation matrix
+	aiMatrix4x4 m = nd->mTransformation;
+	// OpenGL matrices are column major
+	m.Transpose();
+
+	// save model matrix and apply node transformation
+	pushMatrix(MODEL);
+
+	float aux[16];
+	memcpy(aux, &m, sizeof(float) * 16);
+	multMatrix(MODEL, aux);
+
+
+	// draw all meshes assigned to this node
+	for (unsigned int n = 0; n < nd->mNumMeshes; ++n) {
+
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.emissive");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.emissive);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[nd->mMeshes[n]].mat.shininess);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
+		glUniform1i(loc, myMeshes[nd->mMeshes[n]].mat.texCount);
+
+		unsigned int  diffMapCount = 0;  //read 2 diffuse textures
+
+		//devido ao fragment shader suporta 2 texturas difusas simultaneas, 1 especular e 1 normal map
+
+		glUniform1i(normalMap_loc, false);   //GLSL normalMap variable initialized to 0
+		glUniform1i(specularMap_loc, false);
+		glUniform1ui(diffMapCount_loc, 0);
+
+		if (myMeshes[nd->mMeshes[n]].mat.texCount != 0)
+			for (unsigned int i = 0; i < myMeshes[nd->mMeshes[n]].mat.texCount; ++i) {
+
+				//Activate a TU with a Texture Object
+				GLuint TU = myMeshes[nd->mMeshes[n]].texUnits[i];
+				glActiveTexture(GL_TEXTURE0 + TU);
+				glBindTexture(GL_TEXTURE_2D, textureIds[TU]);
+
+				if (myMeshes[nd->mMeshes[n]].texTypes[i] == DIFFUSE) {
+					if (diffMapCount == 0) {
+						diffMapCount++;
+						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff");
+						glUniform1i(loc, TU);
+						glUniform1ui(diffMapCount_loc, diffMapCount);
+					}
+					else if (diffMapCount == 1) {
+						diffMapCount++;
+						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff1");
+						glUniform1i(loc, TU);
+						glUniform1ui(diffMapCount_loc, diffMapCount);
+					}
+					else printf("Only supports a Material with a maximum of 2 diffuse textures\n");
+				}
+				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == SPECULAR) {
+					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitSpec");
+					glUniform1i(loc, TU);
+					glUniform1i(specularMap_loc, true);
+				}
+				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == NORMALS) { //Normal map
+					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitNormalMap");
+					if (normalMapKey)
+						glUniform1i(normalMap_loc, normalMapKey);
+					glUniform1i(loc, TU);
+
+				}
+				else printf("Texture Map not supported\n");
+			}
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// bind VAO
+		glBindVertexArray(myMeshes[nd->mMeshes[n]].vao);
+
+		if (!shader.isProgramValid()) {
+			printf("Program Not Valid!\n");
+			exit(1);
+		}
+		// draw
+		glDrawElements(myMeshes[nd->mMeshes[n]].type, myMeshes[nd->mMeshes[n]].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+	}
+
+	// draw all children
+	for (unsigned int n = 0; n < nd->mNumChildren; ++n) {
+		aiRecursive_render(nd->mChildren[n], myMeshes, textureIds);
+	}
+	popMatrix(MODEL);
+}
+
 void timer(int value)
 {
 	std::ostringstream oss;
@@ -287,6 +413,9 @@ void timer(int value)
 	// Boat movement logic
 	boat.pos[0] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * cos(boat.direction * 3.14 / 180);
 	boat.pos[1] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * sin(boat.direction * 3.14 / 180);
+
+	cams[0].pos[0] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * cos(boat.direction * 3.14 / 180);
+	cams[0].pos[1] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * sin(boat.direction * 3.14 / 180);
 	
 	//pass deltaT to seconds
 	float dt = (1 / deltaT) / 1000.0f;
@@ -498,7 +627,6 @@ void changeSize(int w, int h) {
 	perspective(53.13f, ratio, 0.1f, 1000.0f);
 }
 
-
 // ------------------------------------------------------------
 //
 // Render stufff
@@ -566,86 +694,109 @@ void renderScene(void) {
 
 	glUseProgram(shader.getProgramIndex());
 
-		float res[4];		// Point light world position
-		float res2[4];		// Spotlight world position 
-		float res3[4];		// Spotlight 2 world position
-		float res4[4];		// Spotlight poiting diretion
-		float res5[4];		// Spotlight 2 poiting diretion
+	float res[4];		// Point light world position
+	float res2[4];		// Spotlight world position 
+	float res3[4];		// Spotlight 2 world position
+	float res4[4];		// Spotlight poiting diretion
+	float res5[4];		// Spotlight 2 poiting diretion
 
-		float res6[4];		// Buoy light world position
-		float res7[4];		// Buoy light world position
-		float res8[4];		// Buoy light world position
-		float res9[4];		// Buoy light world position
-		float res10[4];		// Buoy light world position
-		float res11[4];		// Buoy light world position
+	float res6[4];		// Buoy light world position
+	float res7[4];		// Buoy light world position
+	float res8[4];		// Buoy light world position
+	float res9[4];		// Buoy light world position
+	float res10[4];		// Buoy light world position
+	float res11[4];		// Buoy light world position
 
-		multMatrixPoint(VIEW, sunLightPos, res);		// sunLightPos definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, sunLightPos, res);		// sunLightPos definido em World Coord so is converted to eye space
 		
-		multMatrixPoint(VIEW, headlightPos, res2);		// headlightPos definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, headlightPos2, res3);		// headlightPos2 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, headlightDir, res4);		// headlightDir definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, headlightDir2, res5);		// headlightDir2 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, headlightPos, res2);		// headlightPos definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, headlightPos2, res3);		// headlightPos2 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, headlightDir, res4);		// headlightDir definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, headlightDir2, res5);		// headlightDir2 definido em World Coord so is converted to eye space
 
-		multMatrixPoint(VIEW, buoyLightPos, res6);		// buoyLightPos definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, buoyLightPos2, res7);		// buoyLightPos2 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, buoyLightPos3, res8);		// buoyLightPos3 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, buoyLightPos4, res9);		// buoyLightPos4 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, buoyLightPos5, res10);	// buoyLightPos5 definido em World Coord so is converted to eye space
-		multMatrixPoint(VIEW, buoyLightPos6, res11);	// buoyLightPos6 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos, res6);		// buoyLightPos definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos2, res7);		// buoyLightPos2 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos3, res8);		// buoyLightPos3 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos4, res9);		// buoyLightPos4 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos5, res10);	// buoyLightPos5 definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, buoyLightPos6, res11);	// buoyLightPos6 definido em World Coord so is converted to eye space
 
-		glUniform4fv(sunPos_uniformId, 1, res);
+	glUniform4fv(sunPos_uniformId, 1, res);
 
-		glUniform4fv(buoyPos_uniformId, 1, res6);
-		glUniform4fv(buoyPos2_uniformId, 1, res7);
-		glUniform4fv(buoyPos3_uniformId, 1, res8);
-		glUniform4fv(buoyPos4_uniformId, 1, res9);
-		glUniform4fv(buoyPos5_uniformId, 1, res10);
-		glUniform4fv(buoyPos6_uniformId, 1, res11);
+	glUniform4fv(buoyPos_uniformId, 1, res6);
+	glUniform4fv(buoyPos2_uniformId, 1, res7);
+	glUniform4fv(buoyPos3_uniformId, 1, res8);
+	glUniform4fv(buoyPos4_uniformId, 1, res9);
+	glUniform4fv(buoyPos5_uniformId, 1, res10);
+	glUniform4fv(buoyPos6_uniformId, 1, res11);
 
-		glUniform1f(buoyConstantAttenuation_unirformId, buoyLightConstantAttenuation);
-		glUniform1f(buoyLinearAttenuation_unirformId, buoyLightLinearAttenuation);
-		glUniform1f(buoyQuadraticAttenuation_unirformId, buoyLightQuadraticAttenuation);
+	glUniform1f(buoyConstantAttenuation_unirformId, buoyLightConstantAttenuation);
+	glUniform1f(buoyLinearAttenuation_unirformId, buoyLightLinearAttenuation);
+	glUniform1f(buoyQuadraticAttenuation_unirformId, buoyLightQuadraticAttenuation);
 
-		glUniform4fv(headlightPos_uniformId, 1, res2);
-		glUniform4fv(headlightPos2_uniformId, 1, res3);
-		glUniform4fv(headlightDir_uniformId, 1, res4);
-		glUniform4fv(headlightDir2_uniformId, 1, res5);
+	glUniform4fv(headlightPos_uniformId, 1, res2);
+	glUniform4fv(headlightPos2_uniformId, 1, res3);
+	glUniform4fv(headlightDir_uniformId, 1, res4);
+	glUniform4fv(headlightDir2_uniformId, 1, res5);
 
-		glUniform1f(headlightAngle_uniformId, headlightAngle);
-		glUniform1f(headlightExp_uniformId, headlightExp);
+	glUniform1f(headlightAngle_uniformId, headlightAngle);
+	glUniform1f(headlightExp_uniformId, headlightExp);
 
-		glUniform1f(isSunActive_uniformId, isSunActive);
-		glUniform1f(isBuoyLightsActive_uniformId, isBuoyLightsActive);
-		glUniform1f(isHeadlightsActive_uniformId, isHeadlightsActive);
+	glUniform1f(isSunActive_uniformId, isSunActive);
+	glUniform1f(isBuoyLightsActive_uniformId, isBuoyLightsActive);
+	glUniform1f(isHeadlightsActive_uniformId, isHeadlightsActive);
 
-		glUniform1f(depthFog_uniformId, depthFog);
+	glUniform1f(depthFog_uniformId, depthFog);
 
-		int objId = 0;
+	int objId = 0;
 
-		//Associar os Texture Units aos Objects Texture
-		//stone.tga loaded in TU0; checker.tga loaded in TU1;  lightwood.tga loaded in TU2
+	//Associar os Texture Units aos Objects Texture
+	//stone.tga loaded in TU0; checker.tga loaded in TU1;  lightwood.tga loaded in TU2
 
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
 
-		glActiveTexture(GL_TEXTURE1);
-		glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
 
-		glActiveTexture(GL_TEXTURE2);
-		glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
 
 
-		int stone = 0;		// IDs das texturas
-		int checker = 1;
-		int wood = 2;
+	int stone = 0;		// IDs das texturas
+	int checker = 1;
+	int wood = 2;
 
-		//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
-		glUniform1i(tex_loc, stone);
-		glUniform1i(tex_loc1, checker);
-		glUniform1i(tex_loc2, wood);
+	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
+	glUniform1i(tex_loc, stone);
+	glUniform1i(tex_loc1, checker);
+	glUniform1i(tex_loc2, wood);
 
-		glUniform1i(texMode_uniformId, wood);
+	glUniform1i(texMode_uniformId, wood);
 
+	// sets the model matrix to a scale matrix so that the model fits in the window
+	pushMatrix(MODEL);
+	scale(MODEL, scaleFactor, scaleFactor, scaleFactor);
+	translate(MODEL, -50, 10, 0);
+	aiRecursive_render(scene->mRootNode, boatMeshes, textureIds);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	popMatrix(MODEL);
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
+
+	glUniform1i(normalMap_loc, false);
 	for (int i = 0; i < numObj; ++i) {
 
 		// send the material
@@ -808,19 +959,11 @@ void renderScene(void) {
 		else if (i == 25) {
 			//translate(MODEL, 0.5f, 0.5f, 0.5f);
 			translate(MODEL, boat.bb_center[0], boat.bb_center[2], boat.bb_center[1]);
-			
-			//translate(MODEL, fins[0].pos[0] - 2.0f, fins[0].pos[2], fins[0].pos[1] - 1.0f); // Adjust for fin's position
-			//rotate(MODEL, -fins[0].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
-			//translate(MODEL, 5.0f, 0.0f, 5.0f);
-			//rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//shark fin 2
 		else if (i == 26) {
 			translate(MODEL, fins[1].pos[0] - 4.0f, fins[1].pos[2], fins[1].pos[1] - 0.0f); // Adjust for fin's position
 			rotate(MODEL, -fins[1].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
-		
-			//translate(MODEL, 4.0f, 0.0f, -7.0f);
-			//rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 
 		// Initial settings for fins' speed and direction:
@@ -879,39 +1022,7 @@ void renderScene(void) {
 
 		popMatrix(MODEL);
 		objId++;
-	}
-	/*for (int i = 0; i < numObstacle; i++)
-	{
-		// send the material
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, myMeshes[objId].mat.shininess);
-		pushMatrix(MODEL);
-		
-		//translate(MODEL, obstacles[i].center[0], obstacles[i].center[2], obstacles[i].center[1]); // Adjust for fin's position
-		//rotate(MODEL, -fins[i].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
-
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		// Render mesh
-		glBindVertexArray(myMeshes[objId].vao);
-		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
-		popMatrix(MODEL);
-		objId++;
-	}*/
-	
+	}	
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
 	glDisable(GL_DEPTH_TEST);
@@ -1014,6 +1125,9 @@ void processKeys(unsigned char key, int xx, int yy)
 		break;
 	case 'f':
 		depthFog = !depthFog;
+		break;
+	case 'b':  // press key "b" to enable/disable normal mapping 
+		normalMapKey = !normalMapKey;
 		break;
 	}
 }
@@ -1126,6 +1240,9 @@ GLuint setupShaders() {
 	glBindAttribLocation(shader.getProgramIndex(), VERTEX_COORD_ATTRIB, "position");
 	glBindAttribLocation(shader.getProgramIndex(), NORMAL_ATTRIB, "normal");
 	glBindAttribLocation(shader.getProgramIndex(), TEXTURE_COORD_ATTRIB, "texCoord");
+	glBindAttribLocation(shader.getProgramIndex(), NORMAL_ATTRIB, "normal");
+	glBindAttribLocation(shader.getProgramIndex(), TANGENT_ATTRIB, "tangent");
+	glBindAttribLocation(shader.getProgramIndex(), BITANGENT_ATTRIB, "bitangent");
 
 	glLinkProgram(shader.getProgramIndex());
 	printf("InfoLog for Model Rendering Shader\n%s\n\n", shaderText.getAllInfoLogs().c_str());
@@ -1171,6 +1288,10 @@ GLuint setupShaders() {
 
 	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode"); // different modes of texturing
 
+	normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
+	specularMap_loc = glGetUniformLocation(shader.getProgramIndex(), "specularMap");
+	diffMapCount_loc = glGetUniformLocation(shader.getProgramIndex(), "diffMapCount");
+
 	printf("InfoLog for Per Fragment Phong Lightning Shader\n%s\n\n", shader.getAllInfoLogs().c_str());
 
 	// Shader for bitmap Text
@@ -1189,11 +1310,12 @@ GLuint setupShaders() {
 	return(shader.isProgramLinked() && shaderText.isProgramLinked());
 }
 
+
 // ------------------------------------------------------------
 //
 // Model loading and OpenGL setup
 //
-void init()
+int init()
 {
 	MyMesh amesh;
 
@@ -1219,6 +1341,21 @@ void init()
 	Texture2D_Loader(TextureArray, "checker.png", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 
+	std::string filepath;
+	std::ostringstream oss;
+
+	oss << model_dir << "/" << model_dir << ".obj";
+	filepath = oss.str();   //path of OBJ file in the VS project
+
+	strcat(model_dir, "/");  //directory path in the VS project
+
+	//import 3D file into Assimp scene graph
+	if (!Import3DFromFile(filepath, importer, scene, scaleFactor))
+		return(0);
+
+	//creation of Mymesh array with VAO Geometry and Material and array of Texture Objs for the model input by the user
+	boatMeshes = createMeshFromAssimp(scene, textureIds);
+	
 	//values for the """water"""
 	float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
 	float diff[] = { 0.0f, 0.0f, 13.0f, 0.0f };
@@ -1577,70 +1714,13 @@ void init()
 		amesh.mat.texCount = texcount;
 		myMeshes.push_back(amesh);
 	}
-	/*for (int i = 0; i < numObstacle; i++)
-	{
-		amesh = createSphere(obstacles[i].radius, 500);
-		memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-		memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-		memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-		memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-		amesh.mat.shininess = shininess;
-		amesh.mat.texCount = texcount;
-		myMeshes.push_back(amesh);
-	}*/
-
-	/*// create geometry and VAO of the pawn
-	amesh = createPawn();
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-
-
-	// create geometry and VAO of the sphere
-	amesh = createSphere(1.0f, 20);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-
-	float amb1[]= {0.3f, 0.0f, 0.0f, 1.0f};
-	float diff1[] = {0.8f, 0.1f, 0.1f, 1.0f};
-	float spec1[] = {0.9f, 0.9f, 0.9f, 1.0f};
-	shininess=500.0;
-
-	// create geometry and VAO of the cylinder
-	amesh = createCylinder(1.5f, 0.5f, 20);
-	memcpy(amesh.mat.ambient, amb1, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff1, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec1, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-
-	// create geometry and VAO of the
-	amesh = createCone(1.5f, 0.5f, 20);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);*/
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glEnable(GL_MULTISAMPLE);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-
+	return(1);
 }
 
 // ------------------------------------------------------------
@@ -1710,6 +1790,5 @@ int main(int argc, char** argv) {
 
 	return(0);
 }
-
 
 
