@@ -1256,6 +1256,9 @@ void processKeys(unsigned char key, int xx, int yy)
 	case 'b':  // press key "b" to enable/disable normal mapping 
 		normalMapKey = !normalMapKey;
 		break;
+	case 'l':
+		flareEffect = !flareEffect;
+		break;
 	}
 }
 
