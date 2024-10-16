@@ -952,7 +952,7 @@ void processKeys(unsigned char key, int xx, int yy)
 	case 'f':
 		depthFog = !depthFog;
 		break;
-	case 'b':
+	case 'g':
 		isFogEnabled = !isFogEnabled;
 		break;
 	}
