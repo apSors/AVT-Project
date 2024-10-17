@@ -1,17 +1,14 @@
 #version 430
 
+uniform int buoyNumber;
+
 uniform mat4 m_pvm;
 uniform mat4 m_viewModel;
 uniform mat3 m_normal;
 
 uniform vec4 sun_pos;
 
-uniform vec4 buoy_pos;
-uniform vec4 buoy_pos2;
-uniform vec4 buoy_pos3;
-uniform vec4 buoy_pos4;
-uniform vec4 buoy_pos5;
-uniform vec4 buoy_pos6;
+uniform vec4 buoy_pos[buoyNumber];
 
 uniform vec4 headlight_pos;
 uniform vec4 headlight_pos2;
@@ -25,7 +22,7 @@ out Data {
 	vec3 normal;
 	vec3 eye;
 	vec3 sunLightDir;
-	vec3 buoyLightDir[6];
+	vec3 buoyLightDir[buoyNumber];
 	vec3 headlightDir;
 	vec3 headlightDir2;
 	vec2 tex_coord;
@@ -38,6 +35,10 @@ void main () {
 	DataOut.normal = normalize(m_normal * normal.xyz);
 	DataOut.sunLightDir = vec3(sun_pos - pos);
 
+	for (int i = 0; i < buoyNumber; i++)
+	{
+		DataOut.buoyLightDir[i] = vec3(buoy_pos[i] - pos);
+	}
 	DataOut.buoyLightDir[0] = vec3(buoy_pos - pos);
 	DataOut.buoyLightDir[1] = vec3(buoy_pos2 - pos);
 	DataOut.buoyLightDir[2] = vec3(buoy_pos3 - pos);
