@@ -1,5 +1,8 @@
 #version 430
 
+const int MAX_BUOYS = 100000;
+uniform int buoyNumber_frag;
+
 out vec4 colorOut;
 
 struct Materials {
@@ -44,7 +47,7 @@ in Data {
 	vec3 normal;
 	vec3 eye;
 	vec3 sunLightDir;
-	vec3 buoyLightDir[6];
+	vec3 buoyLightDir[MAX_BUOYS];
 	vec3 headlightDir;
 	vec3 headlightDir2;
 	vec2 tex_coord;
@@ -99,7 +102,7 @@ void main() {
 
 	// Buoy lights (Point)
 	if( isBuoyLightsActive == true ){
-		for(int i = 0; i < DataIn.buoyLightDir.length; i++){
+		for(int i = 0; i < buoyNumber_frag; i++){
 			l = normalize(DataIn.buoyLightDir[i]);				 
 			distance = length(DataIn.buoyLightDir[i]);			
 			attenuation = 1.0 / (buoy_const_att + buoy_linear_att * distance + buoy_quad_att * distance * distance);

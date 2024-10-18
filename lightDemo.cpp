@@ -68,8 +68,7 @@ GLint normal_uniformId;
 
 GLint sunPos_uniformId;				// Sun light world position
 GLint buoyNumber_uniformId;
-
-GLint buoyPos_uniformId[buoyNumber];
+GLint buoyNumber_uniformId2;
 
 GLint buoyConstantAttenuation_unirformId; 
 GLint buoyLinearAttenuation_unirformId;
@@ -109,7 +108,6 @@ char s[32];
 
 float sunLightPos[4] = {-5.0f, 5.0f, 15.0f, 1.0f};		// Sun light world position
 
-float *buoyLightPos[buoyNumber];
 // float buoyLightPos[4] =	 { 10.0f, 5.0f, 10.0f, 1.0f };	// Buoy lights world position
 // float buoyLightPos2[4] = { -15.0f, 5.0f, -15.0f, 1.0f };
 // float buoyLightPos3[4] = { 5.0f, 6.0f, -5.0f, 1.0f };
@@ -148,6 +146,9 @@ const int obstacleNumber = houseNumber + buoyNumber +2*2; //+2*2 because we add 
 Obstacle obstacles[obstacleNumber];
 
 int activeCam = 0;
+
+GLint buoyPos_uniformId[buoyNumber];
+float buoyLightPos[buoyNumber][4];
 
 //variable used to switch speeds using 'o'
 int speedSwitch = 0;
@@ -582,26 +583,27 @@ void renderScene(void) {
 
 	glUseProgram(shader.getProgramIndex());
 
-	float *res[buoyNumber];
+	float res[buoyNumber][4];
 
 	for (int i = 0; i < buoyNumber; i++)
 	{
 		multMatrixPoint(VIEW, buoyLightPos[i], res[i]);
 		glUniform4fv(buoyPos_uniformId[i], 1, res[i]);
 	}
+	float res1[4];		// Point light world position
 	float res2[4];		// Spotlight world position 
 	float res3[4];		// Spotlight 2 world position
 	float res4[4];		// Spotlight poiting diretion
 	float res5[4];		// Spotlight 2 poiting diretion
 
-	multMatrixPoint(VIEW, sunLightPos, res);		// sunLightPos definido em World Coord so is converted to eye space
+	multMatrixPoint(VIEW, sunLightPos, res1);		// sunLightPos definido em World Coord so is converted to eye space
 		
 	multMatrixPoint(VIEW, headlightPos, res2);		// headlightPos definido em World Coord so is converted to eye space
 	multMatrixPoint(VIEW, headlightPos2, res3);		// headlightPos2 definido em World Coord so is converted to eye space
 	multMatrixPoint(VIEW, headlightDir, res4);		// headlightDir definido em World Coord so is converted to eye space
 	multMatrixPoint(VIEW, headlightDir2, res5);		// headlightDir2 definido em World Coord so is converted to eye space
 
-	glUniform4fv(sunPos_uniformId, 1, res);
+	glUniform4fv(sunPos_uniformId, 1, res1);
 
 	glUniform1f(buoyConstantAttenuation_unirformId, buoyLightConstantAttenuation);
 	glUniform1f(buoyLinearAttenuation_unirformId, buoyLightLinearAttenuation);
@@ -621,6 +623,7 @@ void renderScene(void) {
 
 	glUniform1f(depthFog_uniformId, depthFog);
 	glUniform1f(buoyNumber_uniformId, buoyNumber);
+	glUniform1f(buoyNumber_uniformId2, buoyNumber);
 
 
 	int objId = 0;
@@ -1145,12 +1148,12 @@ GLuint setupShaders() {
 
 	sunPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sun_pos");					// Sun light world position
 
-	buoyPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos");					// Buoy light world position
-	buoyPos2_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos2");				// Buoy2 light world position
-	buoyPos3_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos3");				// Buoy3 light world position
-	buoyPos4_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos4");				// Buoy4 light world position
-	buoyPos5_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos5");				// Buoy5 light world position
-	buoyPos6_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_pos6");				// Buoy6 light world position
+	for (int i = 0; i < int(buoyNumber); i++)
+	{
+		char var_name[12];
+		snprintf(var_name, 12, "buoy_pos[%d]", i);
+		buoyPos_uniformId[i] = glGetUniformLocation(shader.getProgramIndex(), var_name); // Buoy[i] light world position
+	}
 
 	buoyConstantAttenuation_unirformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_const_att");	// Buoys constant attenuation
 	buoyLinearAttenuation_unirformId = glGetUniformLocation(shader.getProgramIndex(), "buoy_linear_att");	// Buoys linear attenuation
@@ -1168,6 +1171,8 @@ GLuint setupShaders() {
 	isHeadlightsActive_uniformId = glGetUniformLocation(shader.getProgramIndex(), "isHeadlightsActive");	// Boat headlights bool
 
 	depthFog_uniformId = glGetUniformLocation(shader.getProgramIndex(), "depthFog");	// Spotlight 2 exponent
+	buoyNumber_uniformId = glGetUniformLocation(shader.getProgramIndex(), "buoyNumber_vert");
+	buoyNumber_uniformId2 = glGetUniformLocation(shader.getProgramIndex(), "buoyNumber_frag");
 
 	tex_loc = glGetUniformLocation(shader.getProgramIndex(), "texmap");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
@@ -1462,7 +1467,7 @@ void init()
 		}
 		buoyLightPos[i][0] = obstacles[(obstacleNumber - buoyNumber) + i].center[0];
 		buoyLightPos[i][1] = obstacles[(obstacleNumber - buoyNumber) + i].center[1];
-		bstacles[(obstacleNumber - buoyNumber) + i].center[2] = 5.0f;
+		buoyLightPos[i][2] = 5.0f;
 	}
 
 	/*
