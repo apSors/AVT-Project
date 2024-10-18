@@ -913,25 +913,16 @@ void renderScene(void) {
 		updateParticles();
 
 		// draw fireworks particles
-		objId = 6;  //quad for particle
-
-		glBindTexture(GL_TEXTURE_2D, TextureArray[3]); //particle.tga associated to TU3 
-
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-		glDepthMask(GL_FALSE);  //Depth Buffer Read Only
+		glDepthMask(GL_FALSE);  // Depth Buffer Read Only
 
-		glUniform1i(texMode_uniformId, particle); // draw modulated textured particles 
+		// Ensure texMode is set to use particle texture (texmap3)
+		glUniform1i(texMode_uniformId, 3); // Set texMode to 3 for particle texture
 
-		for (int i = 0; i < 1500; i++)
-		{
-			if (particula[i].life > 0.0f) /* só desenha as que ainda estão vivas */
-			{
-
-				/* A vida da partícula representa o canal alpha da cor. Como o blend está activo a cor final é a soma da cor rgb do fragmento multiplicada pelo
-				alpha com a cor do pixel destino */
-
+		for (int i = 0; i < 1500; i++) {
+			if (particula[i].life > 0.0f) /* só desenha as que ainda estão vivas */ {
 				particle_color[0] = particula[i].r;
 				particle_color[1] = particula[i].g;
 				particle_color[2] = particula[i].b;
@@ -951,22 +942,24 @@ void renderScene(void) {
 				computeNormalMatrix3x3();
 				glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
 
-				glBindVertexArray(myMeshes[objId].vao);
-				glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+				glBindVertexArray(myMeshes[26].vao);
+				glDrawElements(myMeshes[26].type, myMeshes[26].numIndexes, GL_UNSIGNED_INT, 0);
 				popMatrix(MODEL);
 			}
-			else dead_num_particles++;
+			else {
+				dead_num_particles++;
+			}
 		}
 
-		glDepthMask(GL_TRUE); //make depth buffer again writeable
+		glDepthMask(GL_TRUE); // Restore writeable depth buffer
 
 		if (dead_num_particles == 1500) {
 			fireworks = 0;
 			dead_num_particles = 0;
 			printf("All particles dead\n");
 		}
-
 	}
+
 
 
 
@@ -1028,7 +1021,7 @@ void renderScene(void) {
 	glEnable(GL_DEPTH_TEST);
 	glDisable(GL_BLEND);
 
-	glBindTexture(GL_TEXTURE_2D, 3);
+	glBindTexture(GL_TEXTURE_2D, 0);
 	glutSwapBuffers();
 }
 

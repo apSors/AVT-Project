@@ -174,7 +174,7 @@ void main() {
 	}
 	else if (texMode == 3) {
 		texel = texture(texmap3, DataIn.tex_coord); // Use texmap3 for particles
-		finalColor = vec4(mat.ambient.rgb * 0.1, mat.ambient.a) + totalSpecular + texel * totalDiffuse;
+		finalColor = mat.diffuse * texel;
     }
 	else // multitexturing
 	{
