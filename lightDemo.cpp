@@ -139,7 +139,7 @@ public:
 
 //
 const int houseNumber = 1000 * 2 * 2; //*2 because 1 house is 1 roof + 1 base and another because its 2 sides of the race
-const int buoyNumber = 1000;
+const int buoyNumber = 150 * 6;
 
 // number of obstacles that have bounding boxes
 const int obstacleNumber = houseNumber + buoyNumber +2*2; //+2*2 because we add 2 houses in the back manually
@@ -534,8 +534,8 @@ void renderScene(void) {
 	float headlightPos[4] = { boat.pos[0], 1.0f, boat.pos[1], 1.0f};			// Boat headlight world position (spotlight)
 	float headlightPos2[4] = { -1.0f + boat.pos[0], 1.0f, boat.pos[1], 1.0f};	// Boat headlight 2 world postion (spotlight)
 
-	float headlightDir[4] = { 0.0f, 0.0f, 1.0f, 0.0f };		// Spotlight pointing diretion 
-	float headlightDir2[4] = { 0.0f, 0.0f, 1.0f, 0.0f };	// Spotlight 2 pointing diretion
+	float headlightDir[4] = { cos(boat.direction), 0.0f, sin(boat.direction), 0.0f};		// Spotlight pointing diretion 
+	float headlightDir2[4] = { cos(boat.direction), 0.0f, 1.0f, 0.0f };	// Spotlight 2 pointing diretion
 
 	float headlightAngle = 0.9;		// Spotlight angle (0-0.9999)
 

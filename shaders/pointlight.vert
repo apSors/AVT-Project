@@ -1,6 +1,6 @@
 #version 430
 
-const int MAX_BUOYS = 100000;
+const int MAX_BUOYS = 25;
 
 uniform int buoyNumber_vert;
 
