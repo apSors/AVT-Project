@@ -311,7 +311,10 @@ void timer(int value)
 	//pass deltaT to seconds
 	//printf("%f\n", elapsedTime);
 	float dt = (1 / deltaT) / 600.0f;
-	elapsedTime += dt;
+	if (!isPaused)
+	{
+		elapsedTime += dt;
+	}
 
 	// After 30 seconds, set progress to 1
 	// After 30 seconds, set progress to 1
@@ -1026,6 +1029,7 @@ void processKeys(unsigned char key, int xx, int yy)
 		if (isPaused == true)
 		{
 			deltaT = 0;
+			
 		}
 		else
 		{
@@ -1435,39 +1439,39 @@ void init()
 		myMeshes.push_back(amesh);
 
 		switch (i % 6) {
-		case 0:
+		case 5:
 			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = -5.0f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 5.0f + 5 * (i-0);
-			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
-			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
-			break;
-		case 1:
-			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = -0.5f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 10.0f + 5 * (i-1);
-			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
-			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
-			break;
-		case 2:
-			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 4.0f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 15.0f + 5 * (i-2);
-			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
-			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
-			break;
-		case 3:
-			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 1.0f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 20.0f + 5 * (i-3);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 5.0f + 5 * (i-5);
 			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
 			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
 			break;
 		case 4:
-			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 7.75f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 20.0f + 5 * (i-4);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = -0.5f;
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 10.0f + 5 * (i-4);
 			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
 			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
 			break;
-		case 5:
+		case 3:
+			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 4.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 15.0f + 5 * (i-3);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
+			break;
+		case 2:
+			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 1.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 20.0f + 5 * (i-2);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
+			break;
+		case 1:
+			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 7.75f;
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 20.0f + 5 * (i-1);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
+			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
+			break;
+		case 0:
 			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = -3.5f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 15.0f + 5 * (i - 5);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 15.0f + 5 * (i - 0);
 			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
 			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
 			break;
