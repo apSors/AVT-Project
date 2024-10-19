@@ -87,9 +87,9 @@ GLint isHeadlightsActive_uniformId;
 
 GLint depthFog_uniformId;	// Fog controller
 
-GLuint TextureArray[3];
+GLuint TextureArray[4];
 
-GLint tex_loc, tex_loc1, tex_loc2;
+GLint tex_loc, tex_loc1, tex_loc2, tex_loc3;
 GLint texMode_uniformId;
 
 // Camera Position
@@ -640,15 +640,20 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
 
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
 
-	int stone = 0;		// IDs das texturas
-	int checker = 1;
-	int wood = 2;
+	// IDs das texturas
+	const int stone = 0;		
+	const int checker = 1;
+	const int wood = 2;
+	const int tree = 3;
 
 	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
 	glUniform1i(tex_loc, stone);
 	glUniform1i(tex_loc1, checker);
 	glUniform1i(tex_loc2, wood);
+	glUniform1i(tex_loc3, tree);
 
 	glUniform1i(texMode_uniformId, wood);
 
@@ -722,12 +727,19 @@ void renderScene(void) {
 			translate(MODEL, (obstacles[houseNumber + 2].center[0] / 2), (obstacles[houseNumber + 2].center[2]), (obstacles[houseNumber + 2].center[1] / 2));
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
-
-		
-		
-		
-		
-		
+		else if (i == 9)
+		{
+			translate(MODEL, 3.0f, 1.5f, 0.0f);
+			float lookAt[3] = {
+				cams[0].pos[0] - 3.0f,  // subtract by the billboard's position
+				cams[0].pos[1] - 1.5f,  
+				cams[0].pos[2] - 0.0f   
+			};
+			normalize(lookAt);
+			float angle = atan2(lookAt[0], lookAt[2]) * (180.0 / 3.1415);
+			rotate(MODEL, angle, 0.0f, 1.0f, 0.0f);
+			glUniform1i(texMode_uniformId, tree);
+		}
 		
 		/*
 		//base of 7th house 
@@ -1177,6 +1189,7 @@ GLuint setupShaders() {
 	tex_loc = glGetUniformLocation(shader.getProgramIndex(), "texmap");
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
+	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
 
 	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode"); // different modes of texturing
 
@@ -1223,10 +1236,11 @@ void init()
 	camY = r * sin(beta * 3.14f / 180.0f);
 
 	//Texture Object definition
-	glGenTextures(3, TextureArray);
+	glGenTextures(4, TextureArray);
 	Texture2D_Loader(TextureArray, "stone.tga", 0);
 	Texture2D_Loader(TextureArray, "checker.png", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
+	Texture2D_Loader(TextureArray, "tree.png", 3);
 
 	//values for the """water"""
 	float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
@@ -1345,6 +1359,16 @@ void init()
 	obstacles[houseNumber + 2].center[1] = -5.0f + 1.0f;
 	obstacles[houseNumber + 2].center[2] = 0.0f + 1.0f;
 	obstacles[houseNumber + 2].radius = 1.0f; //sqrt(0.75 * 4);
+
+	amesh = createQuad(3.0f,3.0f);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+	objectNumber++;
 
 
 

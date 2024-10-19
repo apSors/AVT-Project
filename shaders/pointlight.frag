@@ -39,6 +39,7 @@ uniform float sl_exp2;      // Spotlight 2 quality
 uniform sampler2D texmap;
 uniform sampler2D texmap1;
 uniform sampler2D texmap2;
+uniform sampler2D texmap3;
 
 uniform bool depthFog;
 uniform int texMode;
@@ -174,7 +175,13 @@ void main() {
 		texel = texture(texmap2, DataIn.tex_coord);  // texel from lightwood.tga
 		finalColor = vec4(mat.ambient.rgb * 0.1, mat.ambient.a) + totalSpecular + texel * totalDiffuse;
 	}
-	else if (texMode == 3) // multitexturing
+	else if (texMode == 3)
+	{
+		texel = texture(texmap3, DataIn.tex_coord);
+		if (texel.a == 0.0) discard;
+		else finalColor = vec4(mat.ambient.rgb * 0.1, mat.ambient.a) + totalSpecular + texel * totalDiffuse;
+	}
+	else if (texMode == 4) // multitexturing
 	{
 		texel = texture(texmap2, DataIn.tex_coord);  // texel from lightwood.tga
 		texel1 = texture(texmap1, DataIn.tex_coord);  // texel from checker.tga
