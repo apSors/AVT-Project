@@ -118,7 +118,7 @@ GLint diffMapCount_loc;
 bool normalMapKey = TRUE; // by default if there is a normal map then bump effect is implemented. press key "b" to enable/disable normal mapping 
 const aiScene* scene; // the global Assimp scene object
 float scaleFactor; // scale factor for the Assimp model to fit in the window
-char model_dir[50] = "cottage";
+char model_dir[50] = "boat";
 
 // Camera Position
 float camX, camY, camZ;
@@ -200,8 +200,8 @@ public:
 	float pos[3] = { 0.0f, 0.0f, 0.0f };
 	float angle = 0.0f;
 	float direction = 0.0f;
-	const float bb_radius = sqrt(0.75);
-	float bb_center[3] = { 0.5f, 0.5f, 0.5f };
+	const float bb_radius = sqrt(1);
+	float bb_center[3] = { 0, 0, 0 };
 };
 
 Boat boat;
@@ -503,6 +503,7 @@ void render_flare(FLARE_DEF *flare, int lx, int ly, int *m_viewport) {  //lx, ly
 	glEnable(GL_CULL_FACE);
 	glDisable(GL_BLEND);
 }
+
 void timer(int value)
 {
 	std::ostringstream oss;
@@ -848,8 +849,8 @@ void renderScene(void) {
 	glUniform1f(isBuoyLightsActive_uniformId, isBuoyLightsActive);
 	glUniform1f(isHeadlightsActive_uniformId, isHeadlightsActive);
 
-		glUniform1f(depthFog_uniformId, depthFog);
-		glUniform1f(fogEnable_uniformId, isFogEnabled);
+	glUniform1f(depthFog_uniformId, depthFog);
+	glUniform1f(fogEnable_uniformId, isFogEnabled);
 
 	int objId = 0;
 
@@ -875,19 +876,12 @@ void renderScene(void) {
 	glUniform1i(tex_loc1, checker);
 	glUniform1i(tex_loc2, wood);
 
-	glUniform1i(texMode_uniformId, wood);
-
 	// sets the model matrix to a scale matrix so that the model fits in the window
 	pushMatrix(MODEL);
-	scale(MODEL, scaleFactor, scaleFactor, scaleFactor);
-	translate(MODEL, -50, 10, 0);
+	translate(MODEL, boat.pos[0]+0.5, boat.pos[2]+0.12, boat.pos[1]+0.5);
+	rotate(MODEL, -boat.direction, 0, 1, 0);
+	scale(MODEL, 2*scaleFactor, 2*scaleFactor, 2*scaleFactor);
 	aiRecursive_render(scene->mRootNode, boatMeshes, textureIds);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, 0);
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, 0);
 	popMatrix(MODEL);
 
 	glActiveTexture(GL_TEXTURE0);
@@ -918,153 +912,146 @@ void renderScene(void) {
 			glUniform1i(texMode_uniformId, wood);
 			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
 		}
-		// boat
-		else if (i == 1)
-		{
-			glUniform1i(texMode_uniformId, wood);
-			translate(MODEL, boat.pos[0] - 0.0f, boat.pos[2], boat.pos[1] - 0.0f);
-			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
-		}
 		//base of 1st house 
-		else if (i == 2) {
+		else if (i == 1) {
 			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, (obstacles[0].center[0]/2) - 0.5f, (obstacles[0].center[2] / 2) - 0.5f, (obstacles[0].center[1] / 2) - 0.5f);
 		}
 		//roof of 1st house
-		else if (i == 3) {
+		else if (i == 2) {
 			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, 5.0f, 1.0f, 5.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
 		//base of 2nd house 
-		else if (i == 4) {
+		else if (i == 3) {
 			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, (obstacles[1].center[0] / 2) - 0.5f, (obstacles[1].center[2] / 2) - 0.5f, (obstacles[1].center[1] / 2) - 0.5f);
 		}
 		//roof of 2nd house 
-		else if (i == 5) {
+		else if (i == 4) {
 			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, 5.0f, 1.0f, -1.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
 		//base of 3rd house 
-		else if (i == 6) {
+		else if (i == 5) {
 			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, (obstacles[2].center[0] / 2) - 0.5f, (obstacles[2].center[2] / 2) - 0.5f, (obstacles[2].center[1] / 2) - 0.5f);
 		}
 		//roof of 3rd house 
-		else if (i == 7) {
+		else if (i == 6) {
 			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, -4.0f, 1.0f, -1.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
 		//base of 4th house 
-		else if (i == 8) {
+		else if (i == 7) {
 			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, (obstacles[3].center[0] / 2) - 0.5f, (obstacles[3].center[2] / 2) - 0.5f, (obstacles[3].center[1] / 2) - 0.5f);
 		}
 		//roof of 4th house 
-		else if (i == 9) {
+		else if (i == 8) {
 			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, 7.5f, 1.0f, 1.5f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
 		//base of 5th house 
-		else if (i == 10) {
+		else if (i == 9) {
 			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, (obstacles[4].center[0] / 2) - 0.5f, (obstacles[4].center[2] / 2) - 0.5f, (obstacles[4].center[1] / 2) - 0.5f);
 		}
 		//roof of 5th house 
-		else if (i == 11) {
+		else if (i == 10) {
 			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, -4.0f, 1.0f, 1.5f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
 		//base of 6th house 
-		else if (i == 12) {
+		else if (i == 11) {
 			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, (obstacles[5].center[0] / 2) - 0.5f, (obstacles[5].center[2] / 2) - 0.5f, (obstacles[5].center[1] / 2) - 0.5f);
 		}
 		//roof of 6th house 
-		else if (i == 13) {
+		else if (i == 12) {
 			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, -1.0f, 1.0f, 3.5f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
 		//base of 7th house 
-		else if (i == 14) {
+		else if (i == 13) {
 			glUniform1i(texMode_uniformId, stone);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, (obstacles[6].center[0] / 2) - 0.5f, (obstacles[6].center[2] / 2) - 0.5f, (obstacles[6].center[1] / 2) - 0.5f);
 		}
 		//roof of 7th house 
-		else if (i == 15) {
+		else if (i == 14) {
 			glUniform1i(texMode_uniformId, wood);
 			scale(MODEL, 2.0f, 2.0f, 2.0f);
 			translate(MODEL, -4.0f, 1.0f, 7.0f);
 			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
 		}
 		//1st buoy 
-		else if (i == 16) {
+		else if (i == 15) {
 			translate(MODEL, (obstacles[7].center[0] / 1) - 0.0f, (obstacles[7].center[2] / 1) - 1.0f, (obstacles[7].center[1] / 1) - 0.0f);
 		}
 		//2nd buoy 
-		else if (i == 17) {
+		else if (i == 16) {
 			translate(MODEL, (obstacles[8].center[0] / 1) - 0.0f, (obstacles[8].center[2] / 1) - 1.0f, (obstacles[8].center[1] / 1) - 0.0f);
 		}
 		//3rd buoy 
-		else if (i == 18) {
+		else if (i == 17) {
 			translate(MODEL, (obstacles[9].center[0] / 1) - 0.0f, (obstacles[9].center[2] / 1) - 1.0f, (obstacles[9].center[1] / 1) - 0.0f);
 		}
 		//4th buoy 
-		else if (i == 19) {
+		else if (i == 18) {
 			translate(MODEL, (obstacles[10].center[0] / 1) - 0.0f, (obstacles[10].center[2] / 1) - 1.0f, (obstacles[10].center[1] / 1) - 0.0f);
 		}
 		//5th buoy 
-		else if (i == 20) {
+		else if (i == 19) {
 			translate(MODEL, (obstacles[11].center[0] / 1) - 0.0f, (obstacles[11].center[2] / 1) - 1.0f, (obstacles[11].center[1] / 1) - 0.0f);
 		}
 		//6th buoy 
-		else if (i == 21) {
+		else if (i == 20) {
 			translate(MODEL, (obstacles[12].center[0] / 1) - 0.0f, (obstacles[12].center[2] / 1) - 1.0f, (obstacles[12].center[1] / 1) - 0.0f);
 			}
 		//handle of the paddle
-		else if (i == 22) {
+		else if (i == 21) {
 			glUniform1i(texMode_uniformId, wood);
 			translate(MODEL, 0.5f, 1.2f, 0.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//head1 of the paddle
-		else if (i == 23) {
+		else if (i == 22) {
 			glUniform1i(texMode_uniformId, wood);
 			translate(MODEL, -0.4f, 1.2f, 0.0f);
 			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//head2 of the paddle
-		else if (i == 24) {
+		else if (i == 23) {
 			glUniform1i(texMode_uniformId, wood);
 			translate(MODEL, 1.4f, 1.2f, 0.0f);
 			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
 		}
 		//ball
-		else if (i == 25) {
+		else if (i == 24) {
 			//translate(MODEL, 0.5f, 0.5f, 0.5f);
 			translate(MODEL, boat.bb_center[0], boat.bb_center[2], boat.bb_center[1]);
 		}
 		//shark fin 2
-		else if (i == 26) {
+		else if (i == 25) {
 			translate(MODEL, fins[1].pos[0] - 4.0f, fins[1].pos[2], fins[1].pos[1] - 0.0f); // Adjust for fin's position
 			rotate(MODEL, -fins[1].angle, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
 		}
@@ -1525,16 +1512,7 @@ int init()
 	diff[1] = 0.6f;
 	diff[2] = 0.4f;
 	diff[3] = 1.0f;
-	//create the boat cube
-	amesh = createCube();
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;
+	
 
 	//lets try making a house
 	//base of the house 1
@@ -1859,6 +1837,10 @@ int init()
 		amesh.mat.texCount = texcount;
 		myMeshes.push_back(amesh);
 	}
+
+	// create geometry and VAO of the quad for flare elements
+	amesh = createQuad(1, 1);
+	myMeshes.push_back(amesh);
 
 	//Load flare from file
 	loadFlareFile(&AVTflare, "flare.txt");
