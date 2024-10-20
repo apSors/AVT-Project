@@ -200,8 +200,8 @@ public:
 	float pos[3] = { 0.0f, 0.0f, 0.0f };
 	float angle = 0.0f;
 	float direction = 0.0f;
-	const float bb_radius = sqrt(1);
-	float bb_center[3] = { 0, 0, 0 };
+	const float bb_radius = sqrt(0.75);
+	float bb_center[3] = { 0.5f, 0.5f, 0.5f };
 };
 
 Boat boat;
