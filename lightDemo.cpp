@@ -876,22 +876,6 @@ void renderScene(void) {
 	glUniform1i(tex_loc1, checker);
 	glUniform1i(tex_loc2, wood);
 
-	// sets the model matrix to a scale matrix so that the model fits in the window
-	pushMatrix(MODEL);
-	translate(MODEL, boat.pos[0]+0.5, boat.pos[2]+0.12, boat.pos[1]+0.5);
-	rotate(MODEL, -boat.direction, 0, 1, 0);
-	scale(MODEL, 2*scaleFactor, 2*scaleFactor, 2*scaleFactor);
-	aiRecursive_render(scene->mRootNode, boatMeshes, textureIds);
-	popMatrix(MODEL);
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[0]);
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[1]);
-
-	glActiveTexture(GL_TEXTURE2);
-	glBindTexture(GL_TEXTURE_2D, TextureArray[2]);
 
 	glUniform1i(normalMap_loc, false);
 	for (int i = 0; i < numObj; ++i) {
@@ -1113,6 +1097,14 @@ void renderScene(void) {
 		popMatrix(MODEL);
 		objId++;
 	}	
+
+	// sets the model matrix to a scale matrix so that the model fits in the window
+	pushMatrix(MODEL);
+	translate(MODEL, boat.pos[0] + 0.5, boat.pos[2] + 0.12, boat.pos[1] + 0.5);
+	rotate(MODEL, -boat.direction, 0, 1, 0);
+	scale(MODEL, 2 * scaleFactor, 2 * scaleFactor, 2 * scaleFactor);
+	aiRecursive_render(scene->mRootNode, boatMeshes, textureIds);
+	popMatrix(MODEL);
 
 	if (flareEffect) {
 
