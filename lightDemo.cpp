@@ -515,6 +515,42 @@ void changeSize(int w, int h) {
 		h = 1;
 	// set the viewport to be the entire window
 	glViewport(0, 0, w, h);
+
+	/* create a diamond shaped stencil area */
+	loadIdentity(PROJECTION);
+	if (w <= h)
+		ortho(-2.0, 2.0, -2.0 * (GLfloat)h / (GLfloat)w,
+			2.0 * (GLfloat)h / (GLfloat)w, -10, 10);
+	else
+		ortho(-2.0 * (GLfloat)w / (GLfloat)h,
+			2.0 * (GLfloat)w / (GLfloat)h, -2.0, 2.0, -10, 10);
+
+	// load identity matrices for Model-View
+	loadIdentity(VIEW);
+	loadIdentity(MODEL);
+
+	glUseProgram(shader.getProgramIndex());
+
+	//não vai ser preciso enviar o material pois o cubo não é desenhado
+
+	scale(MODEL, 0.7f, 0.25f, 1.0f);
+	translate(MODEL, -0.5f, 0.0f, -0.0f);
+	// send matrices to OGL
+	computeDerivedMatrix(PROJ_VIEW_MODEL);
+	//glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+	glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+	computeNormalMatrix3x3();
+	glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+	glClear(GL_STENCIL_BUFFER_BIT);
+
+	glStencilFunc(GL_NEVER, 0x1, 0x1);
+	glStencilOp(GL_REPLACE, GL_KEEP, GL_KEEP);
+
+	glBindVertexArray(myMeshes[8911].vao);
+	glDrawElements(myMeshes[8911].type, myMeshes[8911].numIndexes, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(8911);
+
 	// set the projection matrix
 	ratio = (1.0f * w) / h;
 	loadIdentity(PROJECTION);
@@ -657,6 +693,7 @@ void renderScene(void) {
 
 	glUniform1i(texMode_uniformId, wood);
 
+	glStencilFunc(GL_NOTEQUAL, 0x1, 0x1);
 	//render the first few opaque objects (water,boat, paddle, 2 houses...)
 	for (int i = 0; i < objectNumber; ++i) {
 
@@ -844,7 +881,7 @@ void renderScene(void) {
 		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
 		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
 		glUniform1f(loc, myMeshes[objId].mat.shininess);
-		glUniform1i(texMode_uniformId, checker);
+		glUniform1i(texMode_uniformId, 4);
 
 		pushMatrix(MODEL);
 
@@ -885,7 +922,7 @@ void renderScene(void) {
 
 		pushMatrix(MODEL);
 
-		glUniform1i(texMode_uniformId, 4);
+		glUniform1i(texMode_uniformId, 5);
 		translate(MODEL, obstacles[obstacleNumber - buoyNumber + i].center[0], obstacles[obstacleNumber - buoyNumber + i].center[2], obstacles[obstacleNumber - buoyNumber + i].center[1]);
 
 		// send matrices to OGL
@@ -904,6 +941,44 @@ void renderScene(void) {
 		objId++;
 	}
 	glDisable(GL_BLEND);
+
+	// send the material
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+	glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+	glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+	glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+	glUniform1f(loc, myMeshes[objId].mat.shininess);
+	glUniform1i(texMode_uniformId, checker);
+
+	pushMatrix(MODEL);
+	scale(MODEL, 1.0, -1.0, 1.0f);
+
+	glUniform1i(texMode_uniformId, wood);
+	glEnable(GL_CLIP_PLANE0);  // Enable clipping for reflection
+	glStencilFunc(GL_EQUAL, 0x1, 0x1);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+	glBindVertexArray(myMeshes[8911].vao);
+	glDrawElements(myMeshes[8911].type, myMeshes[8911].numIndexes, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(0);
+
+	// send matrices to OGL
+	computeDerivedMatrix(PROJ_VIEW_MODEL);
+	glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+	glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+	computeNormalMatrix3x3();
+	glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+	// Render mesh
+	glBindVertexArray(myMeshes[objId].vao);
+	glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(0);
+
+	popMatrix(MODEL);
+	objId++;
+	glStencilFunc(GL_NOTEQUAL, 0x1, 0x1);
 
 	char lives_UI_MSG[11];
 	snprintf(lives_UI_MSG, 11, "lives: %d/4", boat.lives);
@@ -937,13 +1012,13 @@ void renderScene(void) {
 	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
 	if (isPaused)
 	{
-		RenderText(shaderText, pause_UI_MSG, 500.0f, 400.0f, 3.0f, 0.3, 0.7f, 0.9f);
+		RenderText(shaderText, pause_UI_MSG, m_viewport[2]/2 - 300, m_viewport[3] / 2, 3.0f, 0.3, 0.7f, 0.9f);
 	}
 	else 
 	{
-		RenderText(shaderText, lives_UI_MSG, 10.0f, 720.0f, 1.0f, 0.5f, 0.8f, 0.2f);
+		RenderText(shaderText, lives_UI_MSG, 10.0f, m_viewport[3] - 50, 1.0f, 0.5f, 0.8f, 0.2f);
 	}
-	RenderText(shaderText, timer_UI_MSG, 680.0f, 720.0f, 1.0f, 0.5f, 0.8f, 0.2f);
+	RenderText(shaderText, timer_UI_MSG, m_viewport[2] - 300, m_viewport[3] - 50, 1.0f, 0.5f, 0.8f, 0.2f);
 	popMatrix(PROJECTION);
 	popMatrix(VIEW);
 	popMatrix(MODEL);
@@ -1360,6 +1435,7 @@ void init()
 	obstacles[houseNumber + 2].center[2] = 0.0f + 1.0f;
 	obstacles[houseNumber + 2].radius = 1.0f; //sqrt(0.75 * 4);
 
+	//billboard
 	amesh = createQuad(3.0f,3.0f);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -1369,8 +1445,6 @@ void init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	objectNumber++;
-
-
 
 	//make the houses on the left side
 	for (int i = 0; i < houseNumber/2; i++)
@@ -1494,6 +1568,16 @@ void init()
 		buoyLightPos[i][2] = 5.0f;
 	}
 
+	//rear view cam
+	amesh = createQuad(3.0f, 3.0f);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+
 	/*
 	//lets try making a house
 	//base of the house 1
@@ -1588,6 +1672,8 @@ void init()
 	glEnable(GL_MULTISAMPLE);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
+	glClearStencil(0x0);
+	glEnable(GL_STENCIL_TEST);
 }
 
 // ------------------------------------------------------------
@@ -1609,7 +1695,7 @@ int main(int argc, char** argv) {
 
 	//  GLUT initialization
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_MULTISAMPLE);
+	glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA | GLUT_STENCIL | GLUT_MULTISAMPLE);
 
 	glutInitContextVersion(4, 3);
 	glutInitContextProfile(GLUT_CORE_PROFILE);

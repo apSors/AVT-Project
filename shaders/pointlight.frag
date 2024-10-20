@@ -178,12 +178,12 @@ void main() {
 	else if (texMode == 3)
 	{
 		texel = texture(texmap3, DataIn.tex_coord);
-		if (texel.a == 0.0) discard;
+		if (texel.a <= 0.3) discard;
 		else finalColor = vec4(mat.ambient.rgb * 0.1, mat.ambient.a) + totalSpecular + texel * totalDiffuse;
 	}
 	else if (texMode == 4) // multitexturing
 	{
-		texel = texture(texmap2, DataIn.tex_coord);  // texel from lightwood.tga
+		texel = texture(texmap, DataIn.tex_coord);  // texel from stone.tga
 		texel1 = texture(texmap1, DataIn.tex_coord);  // texel from checker.tga
 		finalColor = totalDiffuse * texel * texel1 + totalSpecular;
 		//finalColor = vec4(max(intensity*mat.diffuse.rgb + totalSpecular.rgb, mat.ambient.rgb), mat.diffuse.a);
