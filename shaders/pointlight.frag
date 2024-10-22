@@ -40,6 +40,7 @@ uniform sampler2D texmap;
 uniform sampler2D texmap1;
 uniform sampler2D texmap2;
 uniform sampler2D texmap3;
+uniform samplerCube cubeMap;
 
 uniform bool depthFog;
 uniform int texMode;
@@ -52,6 +53,7 @@ in Data {
 	vec3 headlightDir;
 	vec3 headlightDir2;
 	vec2 tex_coord;
+	vec3 skyboxTexCoord;
 } DataIn;
 
 vec3 l;				// normalized light direction
@@ -187,6 +189,10 @@ void main() {
 		texel1 = texture(texmap1, DataIn.tex_coord);  // texel from checker.tga
 		finalColor = totalDiffuse * texel * texel1 + totalSpecular;
 		//finalColor = vec4(max(intensity*mat.diffuse.rgb + totalSpecular.rgb, mat.ambient.rgb), mat.diffuse.a);
+	}
+	else if (texMode == 5)
+	{
+		colorOut = texture(cubeMap, DataIn.skyboxTexCoord);
 	}
 	else
 	{

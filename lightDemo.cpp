@@ -89,8 +89,14 @@ GLint depthFog_uniformId;	// Fog controller
 
 GLuint TextureArray[4];
 
-GLint tex_loc, tex_loc1, tex_loc2, tex_loc3;
+GLint tex_loc, tex_loc1, tex_loc2, tex_loc3, tex_cube_loc;
 GLint texMode_uniformId;
+
+// IDs das texturas
+const int stone = 0;
+const int checker = 1;
+const int wood = 2;
+const int tree = 3;
 
 // Camera Position
 float camX, camY, camZ;
@@ -209,9 +215,237 @@ const float duration = 30.0f;  // 30 seconds duration
 float elapsedTime = 0.0f;     
 int difficulty = 0;
 
-// Function to generate a random float value between min and max
-float randomFloat(float min, float max) {
-	return min + static_cast<float>(rand()) / static_cast<float>(RAND_MAX / (max - min));
+void renderEverything(int *objId)
+{
+	GLint loc;
+
+	//render the first few opaque objects (water,boat, paddle, 2 houses...)
+	for (int i = 0; i < objectNumber; ++i) {
+
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[*objId].mat.shininess);
+		pushMatrix(MODEL);
+
+		// """water"""
+		if (i == 0) {
+			glUniform1i(texMode_uniformId, wood);
+			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
+		}
+		// boat
+		else if (i == 1)
+		{
+			glUniform1i(texMode_uniformId, wood);
+			translate(MODEL, boat.pos[0] - 0.0f, boat.pos[2], boat.pos[1] - 0.0f);
+			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
+		}
+		//handle of the paddle
+		else if (i == 2) {
+			glUniform1i(texMode_uniformId, wood);
+			translate(MODEL, 0.5f, 1.2f, 0.0f);
+			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+		}
+		//head1 of the paddle
+		else if (i == 3) {
+			glUniform1i(texMode_uniformId, wood);
+			translate(MODEL, -0.4f, 1.2f, 0.0f);
+			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f);
+		}
+		//head2 of the paddle
+		else if (i == 4) {
+			glUniform1i(texMode_uniformId, wood);
+			translate(MODEL, 1.4f, 1.2f, 0.0f);
+			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
+		}
+		//house 1 base
+		else if (i == 5) {
+			glUniform1i(texMode_uniformId, stone);
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, (obstacles[houseNumber + 1].center[0] / 2) - 0.5f, (obstacles[houseNumber + 1].center[2] / 2) - 0.5f, (obstacles[houseNumber + 1].center[1] / 2) - 0.5f);
+		}
+		//house 1 roof
+		else if (i == 6) {
+			glUniform1i(texMode_uniformId, wood);
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, (obstacles[houseNumber + 1].center[0] / 2), (obstacles[houseNumber + 1].center[2]), (obstacles[houseNumber + 1].center[1] / 2));
+			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+		}
+		//house 2 base
+		else if (i == 7) {
+			glUniform1i(texMode_uniformId, stone);
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, (obstacles[houseNumber + 2].center[0] / 2) - 0.5f, (obstacles[houseNumber + 2].center[2] / 2) - 0.5f, (obstacles[houseNumber + 2].center[1] / 2) - 0.5f);
+		}
+		//house 2 roof
+		else if (i == 8) {
+			glUniform1i(texMode_uniformId, wood);
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, (obstacles[houseNumber + 2].center[0] / 2), (obstacles[houseNumber + 2].center[2]), (obstacles[houseNumber + 2].center[1] / 2));
+			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+		}
+		else if (i == 9)
+		{
+			translate(MODEL, 3.0f, 1.5f, 0.0f);
+			float lookAt[3] = {
+				cams[0].pos[0] - 3.0f,  // subtract by the billboard's position
+				cams[0].pos[1] - 1.5f,
+				cams[0].pos[2] - 0.0f
+			};
+			normalize(lookAt);
+			float angle = atan2(lookAt[0], lookAt[2]) * (180.0 / 3.1415);
+			rotate(MODEL, angle, 0.0f, 1.0f, 0.0f);
+			glUniform1i(texMode_uniformId, tree);
+		}
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(myMeshes[*objId].vao);
+
+		glDrawElements(myMeshes[*objId].type, myMeshes[*objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		(*objId)++;
+	}
+
+	// Initial settings for fins' speed and direction:
+	for (int j = 0; j < sharkfinNumber; j++)
+	{
+		if (difficulty == 0) { fins[j].speed = 30.0f; }
+		else if (difficulty == 1) { fins[j].speed = 60.0f; }
+	}
+
+	//render the houses on eachside based on houseNumber
+	for (int j = 0; j < houseNumber; j++) //*2 because a house is a base and a roof
+	{
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[*objId].mat.shininess);
+		glUniform1i(texMode_uniformId, checker);
+
+		pushMatrix(MODEL);
+		//if base
+		if ((j % 2) == 0)
+		{
+			glUniform1i(texMode_uniformId, stone);
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, (obstacles[j].center[0] / 2) - 0.5f, (obstacles[j].center[2] / 2) - 0.5f, (obstacles[j].center[1] / 2) - 0.5f);
+		}
+		//else roof
+		else
+		{
+			glUniform1i(texMode_uniformId, wood);
+			scale(MODEL, 2.0f, 2.0f, 2.0f);
+			translate(MODEL, (obstacles[j].center[0] / 2), (obstacles[j].center[2]), (obstacles[j].center[1] / 2) - 1.0f);
+			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
+		}
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(myMeshes[*objId].vao);
+		glDrawElements(myMeshes[*objId].type, myMeshes[*objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		(*objId)++;
+	}
+	*objId = *objId + houseNumber;
+
+	//render the shark fins based on sharkfinNumber
+	for (int i = 0; i < sharkfinNumber; i++)
+	{
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[*objId].mat.shininess);
+		glUniform1i(texMode_uniformId, 4);
+
+		pushMatrix(MODEL);
+
+		translate(MODEL, fins[i].pos[0], fins[i].pos[2], fins[i].pos[1]); // Adjust for fin's position6
+		rotate(MODEL, fins[i].direction, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(myMeshes[*objId].vao);
+		glDrawElements(myMeshes[*objId].type, myMeshes[*objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		(*objId)++;
+	}
+
+	//render the translucent buoys
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	for (int i = 0; i < buoyNumber; i++)
+	{
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[*objId].mat.shininess);
+		glUniform1i(texMode_uniformId, checker);
+
+		pushMatrix(MODEL);
+
+		glUniform1i(texMode_uniformId, 5);
+		translate(MODEL, obstacles[obstacleNumber - buoyNumber + i].center[0], obstacles[obstacleNumber - buoyNumber + i].center[2], obstacles[obstacleNumber - buoyNumber + i].center[1]);
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(myMeshes[*objId].vao);
+		glDrawElements(myMeshes[*objId].type, myMeshes[*objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		(*objId)++;
+	}
+	glDisable(GL_BLEND);
 }
 
 bool isColliding(float radius1, float *center1, float radius2, float *center2) {
@@ -534,7 +768,7 @@ void changeSize(int w, int h) {
 	//não vai ser preciso enviar o material pois o cubo não é desenhado
 
 	scale(MODEL, 0.7f, 0.25f, 1.0f);
-	translate(MODEL, -0.5f, 0.0f, -0.0f);
+	translate(MODEL, -0.5f, 6.0f, -0.0f);
 	// send matrices to OGL
 	computeDerivedMatrix(PROJ_VIEW_MODEL);
 	//glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
@@ -567,10 +801,10 @@ void renderScene(void) {
 	loadIdentity(VIEW);
 	loadIdentity(MODEL);
 
-	float headlightPos[4] = { boat.pos[0], 1.0f, boat.pos[1], 1.0f};			// Boat headlight world position (spotlight)
-	float headlightPos2[4] = { -1.0f + boat.pos[0], 1.0f, boat.pos[1], 1.0f};	// Boat headlight 2 world postion (spotlight)
+	float headlightPos[4] = { boat.pos[0], 1.0f, boat.pos[1], 1.0f };			// Boat headlight world position (spotlight)
+	float headlightPos2[4] = { -1.0f + boat.pos[0], 1.0f, boat.pos[1], 1.0f };	// Boat headlight 2 world postion (spotlight)
 
-	float headlightDir[4] = { cos(boat.direction), 0.0f, sin(boat.direction), 0.0f};		// Spotlight pointing diretion 
+	float headlightDir[4] = { cos(boat.direction), 0.0f, sin(boat.direction), 0.0f };		// Spotlight pointing diretion 
 	float headlightDir2[4] = { cos(boat.direction), 0.0f, 1.0f, 0.0f };	// Spotlight 2 pointing diretion
 
 	float headlightAngle = 0.9;		// Spotlight angle (0-0.9999)
@@ -633,7 +867,7 @@ void renderScene(void) {
 	float res5[4];		// Spotlight 2 poiting diretion
 
 	multMatrixPoint(VIEW, sunLightPos, res1);		// sunLightPos definido em World Coord so is converted to eye space
-		
+
 	multMatrixPoint(VIEW, headlightPos, res2);		// headlightPos definido em World Coord so is converted to eye space
 	multMatrixPoint(VIEW, headlightPos2, res3);		// headlightPos2 definido em World Coord so is converted to eye space
 	multMatrixPoint(VIEW, headlightDir, res4);		// headlightDir definido em World Coord so is converted to eye space
@@ -661,8 +895,7 @@ void renderScene(void) {
 	glUniform1f(buoyNumber_uniformId, buoyNumber);
 	glUniform1f(buoyNumber_uniformId2, buoyNumber);
 
-
-	int objId = 0;
+	int objId = 8912;
 
 	//Associar os Texture Units aos Objects Texture
 	//stone.tga loaded in TU0; checker.tga loaded in TU1;  lightwood.tga loaded in TU2
@@ -679,290 +912,33 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE3);
 	glBindTexture(GL_TEXTURE_2D, TextureArray[3]);
 
-	// IDs das texturas
-	const int stone = 0;		
-	const int checker = 1;
-	const int wood = 2;
-	const int tree = 3;
+	glActiveTexture(GL_TEXTURE4);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[4]);
 
 	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
 	glUniform1i(tex_loc, stone);
 	glUniform1i(tex_loc1, checker);
 	glUniform1i(tex_loc2, wood);
 	glUniform1i(tex_loc3, tree);
+	glUniform1i(tex_cube_loc, 4);
 
-	glUniform1i(texMode_uniformId, wood);
 
 	glStencilFunc(GL_NOTEQUAL, 0x1, 0x1);
-	//render the first few opaque objects (water,boat, paddle, 2 houses...)
-	for (int i = 0; i < objectNumber; ++i) {
 
-		// send the material
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, myMeshes[objId].mat.shininess);
-		pushMatrix(MODEL);
-
-		// """water"""
-		if (i == 0) {
-			glUniform1i(texMode_uniformId, wood);
-			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
-		}
-		// boat
-		else if (i == 1)
-		{
-			glUniform1i(texMode_uniformId, wood);
-			translate(MODEL, boat.pos[0] - 0.0f, boat.pos[2], boat.pos[1] - 0.0f);
-			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
-		}
-		//handle of the paddle
-		else if (i == 2) {
-			glUniform1i(texMode_uniformId, wood);
-			translate(MODEL, 0.5f, 1.2f, 0.0f);
-			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
-		}
-		//head1 of the paddle
-		else if (i == 3) {
-			glUniform1i(texMode_uniformId, wood);
-			translate(MODEL, -0.4f, 1.2f, 0.0f);
-			rotate(MODEL, -90.0f, 0.0f, 0.0f, 1.0f);
-		}
-		//head2 of the paddle
-		else if (i == 4) {
-			glUniform1i(texMode_uniformId, wood);
-			translate(MODEL, 1.4f, 1.2f, 0.0f);
-			rotate(MODEL, 90.0f, 0.0f, 0.0f, 1.0f);
-		}
-		//house 1 base
-		else if (i == 5) {
-			glUniform1i(texMode_uniformId, stone);
-			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, (obstacles[houseNumber + 1].center[0] / 2) - 0.5f, (obstacles[houseNumber + 1].center[2] / 2) - 0.5f, (obstacles[houseNumber + 1].center[1] / 2) - 0.5f);
-		}
-		//house 1 roof
-		else if (i == 6) {
-			glUniform1i(texMode_uniformId, wood);
-			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, (obstacles[houseNumber + 1].center[0] / 2), (obstacles[houseNumber + 1].center[2]), (obstacles[houseNumber + 1].center[1] / 2));
-			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
-		}
-		//house 2 base
-		else if (i == 7) {
-			glUniform1i(texMode_uniformId, stone);
-			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, (obstacles[houseNumber + 2].center[0] / 2) - 0.5f, (obstacles[houseNumber + 2].center[2] / 2) - 0.5f, (obstacles[houseNumber + 2].center[1] / 2) - 0.5f);
-		}
-		//house 2 roof
-		else if (i == 8) {
-			glUniform1i(texMode_uniformId, wood);
-			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, (obstacles[houseNumber + 2].center[0] / 2), (obstacles[houseNumber + 2].center[2]), (obstacles[houseNumber + 2].center[1] / 2));
-			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
-		}
-		else if (i == 9)
-		{
-			translate(MODEL, 3.0f, 1.5f, 0.0f);
-			float lookAt[3] = {
-				cams[0].pos[0] - 3.0f,  // subtract by the billboard's position
-				cams[0].pos[1] - 1.5f,  
-				cams[0].pos[2] - 0.0f   
-			};
-			normalize(lookAt);
-			float angle = atan2(lookAt[0], lookAt[2]) * (180.0 / 3.1415);
-			rotate(MODEL, angle, 0.0f, 1.0f, 0.0f);
-			glUniform1i(texMode_uniformId, tree);
-		}
-		
-		/*
-		//base of 7th house 
-		else if (i == 14) {
-			glUniform1i(texMode_uniformId, stone);
-			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, (obstacles[6].center[0] / 2) - 0.5f, (obstacles[6].center[2] / 2) - 0.5f, (obstacles[6].center[1] / 2) - 0.5f);
-		}
-		//roof of 7th house 
-		else if (i == 15) {
-			glUniform1i(texMode_uniformId, wood);
-			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, -4.0f, 1.0f, 7.0f);
-			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
-		}
-		//1st buoy 
-		else if (i == 16) {
-			translate(MODEL, (obstacles[7].center[0] / 1) - 0.0f, (obstacles[7].center[2] / 1) - 1.0f, (obstacles[7].center[1] / 1) - 0.0f);
-		}
-		*/
-	
-		// Initial settings for fins' speed and direction:
-		for (int j = 0; j < sharkfinNumber; j++)
-		{
-			if (difficulty == 0) { fins[j].speed = 30.0f; }
-			else if (difficulty == 1) { fins[j].speed = 60.0f; }
-		}
-
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		// Render mesh
-		glBindVertexArray(myMeshes[objId].vao);
-
-		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
-		popMatrix(MODEL);
-		objId++;
-	}
-
-	//render the houses on eachside based on houseNumber
-	for (int j = 0; j < houseNumber; j++) //*2 because a house is a base and a roof
-	{
-		// send the material
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, myMeshes[objId].mat.shininess);
-		glUniform1i(texMode_uniformId, checker);
-
-		pushMatrix(MODEL);
-		//if base
-		if ((j % 2) == 0)
-		{
-			glUniform1i(texMode_uniformId, stone);
-			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, (obstacles[j].center[0] / 2) - 0.5f, (obstacles[j].center[2] / 2) - 0.5f, (obstacles[j].center[1] / 2) - 0.5f);
-		}
-		//else roof
-		else
-		{
-			glUniform1i(texMode_uniformId, wood);
-			scale(MODEL, 2.0f, 2.0f, 2.0f);
-			translate(MODEL, (obstacles[j].center[0] / 2), (obstacles[j].center[2]), (obstacles[j].center[1] / 2) - 1.0f);
-			rotate(MODEL, 45.0, 0.0f, 1.0f, 0.0f);
-		}
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		// Render mesh
-		glBindVertexArray(myMeshes[objId].vao);
-		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
-		popMatrix(MODEL);
-		objId++;
-	}
-	objId = objId + houseNumber;
-
-	//render the shark fins based on sharkfinNumber
-	for (int i = 0; i < sharkfinNumber; i++)
-	{
-		// send the material
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, myMeshes[objId].mat.shininess);
-		glUniform1i(texMode_uniformId, 4);
-
-		pushMatrix(MODEL);
-
-		translate(MODEL, fins[i].pos[0], fins[i].pos[2], fins[i].pos[1]); // Adjust for fin's position6
-		rotate(MODEL, fins[i].direction, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
-
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		// Render mesh
-		glBindVertexArray(myMeshes[objId].vao);
-		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
-		popMatrix(MODEL);
-		objId++;
-	}
-
-	//render the translucent buoys
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	for (int i = 0; i < buoyNumber; i++)
-	{
-		// send the material
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, myMeshes[objId].mat.shininess);
-		glUniform1i(texMode_uniformId, checker);
-
-		pushMatrix(MODEL);
-
-		glUniform1i(texMode_uniformId, 5);
-		translate(MODEL, obstacles[obstacleNumber - buoyNumber + i].center[0], obstacles[obstacleNumber - buoyNumber + i].center[2], obstacles[obstacleNumber - buoyNumber + i].center[1]);
-
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		// Render mesh
-		glBindVertexArray(myMeshes[objId].vao);
-		glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
-		popMatrix(MODEL);
-		objId++;
-	}
-	glDisable(GL_BLEND);
-
-	// send the material
-	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-	glUniform4fv(loc, 1, myMeshes[objId].mat.ambient);
-	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-	glUniform4fv(loc, 1, myMeshes[objId].mat.diffuse);
-	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-	glUniform4fv(loc, 1, myMeshes[objId].mat.specular);
-	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-	glUniform1f(loc, myMeshes[objId].mat.shininess);
-	glUniform1i(texMode_uniformId, checker);
+	glDepthMask(GL_FALSE);
+	glFrontFace(GL_CW); // set clockwise vertex order to mean the front
 
 	pushMatrix(MODEL);
-	scale(MODEL, 1.0, -1.0, 1.0f);
+	pushMatrix(VIEW);  //se quiser anular a translação
 
-	glUniform1i(texMode_uniformId, wood);
-	glEnable(GL_CLIP_PLANE0);  // Enable clipping for reflection
-	glStencilFunc(GL_EQUAL, 0x1, 0x1);
-	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
-	glBindVertexArray(myMeshes[8911].vao);
-	glDrawElements(myMeshes[8911].type, myMeshes[8911].numIndexes, GL_UNSIGNED_INT, 0);
-	glBindVertexArray(0);
+	//  Fica mais realista se não anular a translação da câmara 
+	// Cancel the translation movement of the camera - de acordo com o tutorial do Antons
+	mMatrix[VIEW][12] = 0.0f;
+	mMatrix[VIEW][13] = 0.0f;
+	mMatrix[VIEW][14] = 0.0f;
+
+	scale(MODEL, 100.0f, 100.0f, 100.0f);
+	translate(MODEL, -0.5f, -0.5f, -0.5f);
 
 	// send matrices to OGL
 	computeDerivedMatrix(PROJ_VIEW_MODEL);
@@ -971,15 +947,47 @@ void renderScene(void) {
 	computeNormalMatrix3x3();
 	glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
 
-	// Render mesh
 	glBindVertexArray(myMeshes[objId].vao);
 	glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
-
 	popMatrix(MODEL);
-	objId++;
+	popMatrix(VIEW);
+
+	glFrontFace(GL_CCW); // restore counter clockwise vertex order to mean the front
+	glDepthMask(GL_TRUE);
+
+	objId = 0;
+
+	renderEverything(&objId);
+
+	objId = 0;
+
+	//stencil
+	//glUniform1i(texMode_uniformId, wood);
+	//glEnable(GL_CLIP_PLANE0);  // Enable clipping for reflection
+	glStencilFunc(GL_EQUAL, 0x1, 0x1);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+	lookAt(boat.bb_center[0], boat.bb_center[2], boat.bb_center[1], 0, 0, 0, 0, 1, 0);
+	renderEverything(&objId);
+
+
+	//// send matrices to OGL
+	//computeDerivedMatrix(PROJ_VIEW_MODEL);
+	//glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+	//glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+	//computeNormalMatrix3x3();
+	//glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+	//// Render mesh
+	//glBindVertexArray(myMeshes[objId].vao);
+	//glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
+	//glBindVertexArray(0);
+
 	glStencilFunc(GL_NOTEQUAL, 0x1, 0x1);
 
+
+	//HUD
 	char lives_UI_MSG[11];
 	snprintf(lives_UI_MSG, 11, "lives: %d/4", boat.lives);
 
@@ -1265,6 +1273,7 @@ GLuint setupShaders() {
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
 	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
+	tex_cube_loc = glGetUniformLocation(shader.getProgramIndex(), "cubeMap");
 
 	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode"); // different modes of texturing
 
@@ -1311,11 +1320,16 @@ void init()
 	camY = r * sin(beta * 3.14f / 180.0f);
 
 	//Texture Object definition
-	glGenTextures(4, TextureArray);
+	glGenTextures(5, TextureArray);
 	Texture2D_Loader(TextureArray, "stone.tga", 0);
 	Texture2D_Loader(TextureArray, "checker.png", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 	Texture2D_Loader(TextureArray, "tree.png", 3);
+
+	const char* filenames[] = { "posx.png", "negx.png", "posy.png", "negy.png", "posz.png", "negz.png" };
+
+	TextureCubeMap_Loader(TextureArray, filenames, 4);
+
 
 	//values for the """water"""
 	float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
@@ -1570,6 +1584,16 @@ void init()
 
 	//rear view cam
 	amesh = createQuad(3.0f, 3.0f);
+	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
+	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
+	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
+	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
+	amesh.mat.shininess = shininess;
+	amesh.mat.texCount = texcount;
+	myMeshes.push_back(amesh);
+
+	//skybox cube
+	amesh = createCube();
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
 	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));

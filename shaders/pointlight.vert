@@ -28,10 +28,15 @@ out Data {
 	vec3 headlightDir;
 	vec3 headlightDir2;
 	vec2 tex_coord;
+	vec3 skyboxTexCoord;
 } DataOut;
 
 void main () {
 
+	//skybox
+	DataOut.skyboxTexCoord = vec3(m_viewModel * position);
+	DataOut.skyboxTexCoord.x = - DataOut.skyboxTexCoord.x;
+	
 	vec4 pos = m_viewModel * position;
 
 	DataOut.normal = normalize(m_normal * normal.xyz);
