@@ -771,8 +771,8 @@ void render_flare(FLARE_DEF *flare, int lx, int ly, int *m_viewport) {  //lx, ly
 			computeNormalMatrix3x3();
 			glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
 
-			glBindVertexArray(myMeshes[6].vao);
-			glDrawElements(myMeshes[6].type, myMeshes[6].numIndexes, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(myMeshes[8913].vao);
+			glDrawElements(myMeshes[8913].type, myMeshes[8913].numIndexes, GL_UNSIGNED_INT, 0);
 			glBindVertexArray(0);
 			popMatrix(MODEL);
 		}
@@ -1917,6 +1917,7 @@ int init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
+
 	// create geometry and VAO of the quad for flare elements
 	amesh = createQuad(1, 1);
 	myMeshes.push_back(amesh);
