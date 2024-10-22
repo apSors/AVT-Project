@@ -7,6 +7,7 @@ uniform int buoyNumber_vert;
 uniform mat4 m_pvm;
 uniform mat4 m_viewModel;
 uniform mat3 m_normal;
+uniform mat4 m_Model;
 
 uniform bool normalMap;
 
@@ -36,7 +37,7 @@ out Data {
 void main () {
 
 	//skybox
-	DataOut.skyboxTexCoord = vec3(m_viewModel * position);
+	DataOut.skyboxTexCoord = vec3(m_Model * position);
 	DataOut.skyboxTexCoord.x = - DataOut.skyboxTexCoord.x;
 	
 	vec3 n, t, b;

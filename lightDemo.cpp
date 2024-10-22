@@ -74,6 +74,7 @@ extern float mNormal3x3[9];
 
 GLint pvm_uniformId;
 GLint vm_uniformId;
+GLint model_uniformId;
 GLint normal_uniformId;
 
 GLint sunPos_uniformId;				// Sun light world position
@@ -98,7 +99,7 @@ GLint isHeadlightsActive_uniformId;
 GLint depthFog_uniformId;	// Fog Depth controller
 GLint fogEnable_uniformId;	// Fog controller
 
-GLuint TextureArray[4];
+GLuint TextureArray[5];
 GLuint FlareTextureArray[5];
 
 GLint tex_loc, tex_loc1, tex_loc2, tex_loc3, tex_cube_loc;
@@ -109,6 +110,7 @@ const int stone = 0;
 const int checker = 1;
 const int wood = 2;
 const int tree = 3;
+const int skybox = 4;
 GLuint* textureIds;  // Array of Texture Objects
 
 GLint normalMap_loc;
@@ -733,7 +735,7 @@ void render_flare(FLARE_DEF *flare, int lx, int ly, int *m_viewport) {  //lx, ly
 
 	// Render each element. To be used Texture Unit 0
 
-	glUniform1i(texMode_uniformId, 3); // draw modulated textured particles 
+	glUniform1i(texMode_uniformId, 4); // draw modulated textured particles 
 	glUniform1i(tex_loc, 0);  //use TU 0
 
 	for (i = 0; i < flare->nPieces; ++i)
@@ -1169,7 +1171,6 @@ void renderScene(void) {
 	glUniform1f(buoyNumber_uniformId2, buoyNumber);
 	glUniform1f(fogEnable_uniformId, isFogEnabled);
 
-	int objId = 8912;
 
 	//Associar os Texture Units aos Objects Texture
 	//stone.tga loaded in TU0; checker.tga loaded in TU1;  lightwood.tga loaded in TU2
@@ -1194,38 +1195,40 @@ void renderScene(void) {
 	glUniform1i(tex_loc1, checker);
 	glUniform1i(tex_loc2, wood);
 	glUniform1i(tex_loc3, tree);
-	glUniform1i(tex_cube_loc, 4);
+	glUniform1i(tex_cube_loc, skybox);
 
 
 	glStencilFunc(GL_NOTEQUAL, 0x1, 0x1);
 
+	int objId = 8912;
+
+	//it won't write anything to the zbuffer; all subsequently drawn scenery to be in front of the sky box. 
 	glDepthMask(GL_FALSE);
 	glFrontFace(GL_CW); // set clockwise vertex order to mean the front
 
 	pushMatrix(MODEL);
-	pushMatrix(VIEW);  //se quiser anular a translação
+	//pushMatrix(VIEW);  //se quiser anular a translação
 
 	//  Fica mais realista se não anular a translação da câmara 
 	// Cancel the translation movement of the camera - de acordo com o tutorial do Antons
-	mMatrix[VIEW][12] = 0.0f;
-	mMatrix[VIEW][13] = 0.0f;
-	mMatrix[VIEW][14] = 0.0f;
+	//mMatrix[VIEW][12] = 0.0f;
+	//mMatrix[VIEW][13] = 0.0f;
+	//mMatrix[VIEW][14] = 0.0f;
 
+	glUniform1i(texMode_uniformId, 5);
 	scale(MODEL, 100.0f, 100.0f, 100.0f);
 	translate(MODEL, -0.5f, -0.5f, -0.5f);
 
 	// send matrices to OGL
+	glUniformMatrix4fv(model_uniformId, 1, GL_FALSE, mMatrix[MODEL]); //Transformação de modelação do cubo unitário para o "Big Cube"
 	computeDerivedMatrix(PROJ_VIEW_MODEL);
-	glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
 	glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-	computeNormalMatrix3x3();
-	glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
 
 	glBindVertexArray(myMeshes[objId].vao);
 	glDrawElements(myMeshes[objId].type, myMeshes[objId].numIndexes, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 	popMatrix(MODEL);
-	popMatrix(VIEW);
+	//popMatrix(VIEW);
 
 	glFrontFace(GL_CCW); // restore counter clockwise vertex order to mean the front
 	glDepthMask(GL_TRUE);
@@ -1526,6 +1529,7 @@ GLuint setupShaders() {
 
 	pvm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_pvm");
 	vm_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_viewModel");
+	model_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_Model");
 	normal_uniformId = glGetUniformLocation(shader.getProgramIndex(), "m_normal");
 
 	sunPos_uniformId = glGetUniformLocation(shader.getProgramIndex(), "sun_pos");					// Sun light world position
@@ -1927,8 +1931,11 @@ int init()
 
 	// some GL settings
 	glEnable(GL_DEPTH_TEST);
-	glEnable(GL_CULL_FACE);
+	glEnable(GL_CULL_FACE);	// cull face
+	glCullFace(GL_BACK);		 // cull back face
+	glFrontFace(GL_CCW); // set counter-clockwise vertex order to mean the front
 	glEnable(GL_MULTISAMPLE);
+	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	glClearStencil(0x0);
