@@ -118,7 +118,7 @@ GLint diffMapCount_loc;
 bool normalMapKey = TRUE; // by default if there is a normal map then bump effect is implemented. press key "b" to enable/disable normal mapping 
 const aiScene* scene; // the global Assimp scene object
 float scaleFactor; // scale factor for the Assimp model to fit in the window
-char model_dir[50] = "cottage";
+char model_dir[50] = "boat";
 
 // Camera Position
 float camX, camY, camZ;
@@ -781,6 +781,7 @@ void render_flare(FLARE_DEF *flare, int lx, int ly, int *m_viewport) {  //lx, ly
 	glEnable(GL_CULL_FACE);
 	glDisable(GL_BLEND);
 }
+
 void timer(int value)
 {
 	std::ostringstream oss;
@@ -1166,6 +1167,7 @@ void renderScene(void) {
 	glUniform1f(depthFog_uniformId, depthFog);
 	glUniform1f(buoyNumber_uniformId, buoyNumber);
 	glUniform1f(buoyNumber_uniformId2, buoyNumber);
+	glUniform1f(fogEnable_uniformId, isFogEnabled);
 
 	int objId = 8912;
 
@@ -1925,6 +1927,10 @@ int init()
 	amesh.mat.shininess = shininess;
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
+	// create geometry and VAO of the quad for flare elements
+	amesh = createQuad(1, 1);
+	myMeshes.push_back(amesh);
+
 	//Load flare from file
 	loadFlareFile(&AVTflare, "flare.txt");
 

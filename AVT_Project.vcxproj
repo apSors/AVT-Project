@@ -185,6 +185,16 @@
     <None Include="shaders\text.frag" />
     <None Include="shaders\text.vert" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="crcl.tga" />
+    <Image Include="flar.tga" />
+    <Image Include="hxgn.tga" />
+    <Image Include="ring.tga" />
+    <Image Include="sun.tga" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="flare.txt" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
