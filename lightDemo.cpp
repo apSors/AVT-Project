@@ -243,6 +243,14 @@ const float duration = 30.0f;  // 30 seconds duration
 float elapsedTime = 0.0f;     
 int difficulty = 0;
 
+inline double clamp(const double x, const double min, const double max) {
+	return (x < min ? min : (x > max ? max : x));
+}
+
+inline int clampi(const int x, const int min, const int max) {
+	return (x < min ? min : (x > max ? max : x));
+}
+
 void renderEverything(int *objId)
 {
 	GLint loc;
@@ -501,14 +509,6 @@ void renderEverything(int *objId)
 		(*objId)++;
 	}
 	glDisable(GL_BLEND);
-}
-
-inline double clamp(const double x, const double min, const double max) {
-	return (x < min ? min : (x > max ? max : x));
-}
-
-inline int clampi(const int x, const int min, const int max) {
-	return (x < min ? min : (x > max ? max : x));
 }
 
 bool isColliding(float radius1, float *center1, float radius2, float *center2) {
