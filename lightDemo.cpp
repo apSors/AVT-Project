@@ -427,7 +427,7 @@ void renderEverything(int *objId)
 
 		pushMatrix(MODEL);
 
-		glUniform1i(texMode_uniformId, 5);
+		glUniform1i(texMode_uniformId, 6);
 		translate(MODEL, obstacles[obstacleNumber - buoyNumber + i].center[0], obstacles[obstacleNumber - buoyNumber + i].center[2], obstacles[obstacleNumber - buoyNumber + i].center[1]);
 
 		// send matrices to OGL
