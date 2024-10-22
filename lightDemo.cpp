@@ -1829,16 +1829,6 @@ int init()
 		obstacles[i + houseNumber / 2].radius = 1.0f; //sqrt(0.75 * 4);
 	}
 
-	/*amesh = createSphere(boat.bb_radius, 500);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
-	amesh.mat.texCount = texcount;
-	myMeshes.push_back(amesh);
-	numObj++;*/
-
 	//shark fins
 	for (int i = 0; i < sharkfinNumber; i++)
 	{
