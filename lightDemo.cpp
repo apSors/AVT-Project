@@ -154,7 +154,7 @@ bool isBuoyLightsActive = 0;
 bool isHeadlightsActive = 0;
 
 bool depthFog = 0;
-bool isFogEnabled = true;
+bool isFogEnabled = false;
 
 //Flare effect
 FLARE_DEF AVTflare;
@@ -1245,7 +1245,7 @@ void renderScene(void) {
 	glStencilFunc(GL_EQUAL, 0x1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
-	lookAt(boat.bb_center[0], boat.bb_center[2], boat.bb_center[1], 0, 0, 0, 0, 1, 0);
+	lookAt(boat.bb_center[0], boat.bb_center[2]-1, boat.bb_center[1], cams[0].pos[0], cams[0].pos[1], cams[0].pos[2], 0, 1, 0);
 	renderEverything(&objId);
 
 
