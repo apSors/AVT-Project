@@ -231,7 +231,8 @@ void main() {
 	}
 	else if (texMode == 5)
 	{
-		colorOut = texture(cubeMap, DataIn.skyboxTexCoord);
+		finalColor = texture(cubeMap, DataIn.skyboxTexCoord);
+		//finalColor = texture(texmap, DataIn.tex_coord);
 	}
 	else
 	{
