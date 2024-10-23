@@ -455,7 +455,7 @@ void render_flare(FLARE_DEF *flare, int lx, int ly, int *m_viewport) {  //lx, ly
 
 	// Render each element. To be used Texture Unit 0
 
-	glUniform1i(texMode_uniformId, 3); // draw modulated textured particles 
+	glUniform1i(texMode_uniformId, 0); // draw modulated textured particles 
 	glUniform1i(tex_loc, 0);  //use TU 0
 
 	for (i = 0; i < flare->nPieces; ++i)
@@ -493,8 +493,8 @@ void render_flare(FLARE_DEF *flare, int lx, int ly, int *m_viewport) {  //lx, ly
 			computeNormalMatrix3x3();
 			glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
 
-			glBindVertexArray(myMeshes[6].vao);
-			glDrawElements(myMeshes[6].type, myMeshes[6].numIndexes, GL_UNSIGNED_INT, 0);
+			glBindVertexArray(myMeshes[numObj].vao);
+			glDrawElements(myMeshes[numObj].type, myMeshes[numObj].numIndexes, GL_UNSIGNED_INT, 0);
 			glBindVertexArray(0);
 			popMatrix(MODEL);
 		}
@@ -1833,6 +1833,7 @@ int init()
 	// create geometry and VAO of the quad for flare elements
 	amesh = createQuad(1, 1);
 	myMeshes.push_back(amesh);
+	numObj++;
 
 	//Load flare from file
 	loadFlareFile(&AVTflare, "flare.txt");
