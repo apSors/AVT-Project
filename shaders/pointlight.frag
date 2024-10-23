@@ -55,6 +55,7 @@ uniform bool depthFog;
 uniform bool isFogEnabled;
 
 uniform int texMode;
+uniform bool shadowMode;
 
 in Data {
 	vec3 normal;
@@ -199,6 +200,9 @@ void main() {
 
 	// Combine lighting results without textures yet
 	vec4 finalColor = max(totalDiffuse + totalSpecular, mat.ambient);
+
+	if(shadowMode)  //constant color
+		colorOut = vec4(0.5, 0.5, 0.5, 1.0);
 
 	// Texture application depending on the mode
 	if(texMode == 0) // modulate diffuse color with texel color

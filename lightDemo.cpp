@@ -81,7 +81,7 @@ GLint sunPos_uniformId;				// Sun light world position
 GLint buoyNumber_uniformId;
 GLint buoyNumber_uniformId2;
 
-GLint buoyConstantAttenuation_unirformId; 
+GLint buoyConstantAttenuation_unirformId;
 GLint buoyLinearAttenuation_unirformId;
 GLint buoyQuadraticAttenuation_unirformId;
 
@@ -104,6 +104,7 @@ GLuint FlareTextureArray[5];
 
 GLint tex_loc, tex_loc1, tex_loc2, tex_loc3, tex_cube_loc;
 GLint texMode_uniformId;
+GLint shadowMode_uniformId;
 
 // IDs das texturas
 const int stone = 0;
@@ -136,7 +137,7 @@ float r = 10.0f;
 long myTime, timebase = 0, frame = 0;
 char s[32];
 
-float sunLightPos[4] = {-5.0f, 5.0f, 15.0f, 1.0f};		// Sun light world position
+float sunLightPos[4] = { -5.0f, 5.0f, 15.0f, 1.0f };		// Sun light world position
 
 // float buoyLightPos[4] =	 { 10.0f, 5.0f, 10.0f, 1.0f };	// Buoy lights world position
 // float buoyLightPos2[4] = { -15.0f, 5.0f, -15.0f, 1.0f };
@@ -178,7 +179,7 @@ const int houseNumber = 1000 * 2 * 2; //*2 because 1 house is 1 roof + 1 base an
 const int buoyNumber = 150 * 6;
 
 // number of obstacles that have bounding boxes
-const int obstacleNumber = houseNumber + buoyNumber +2*2; //+2*2 because we add 2 houses in the back manually
+const int obstacleNumber = houseNumber + buoyNumber + 2 * 2; //+2*2 because we add 2 houses in the back manually
 Obstacle obstacles[obstacleNumber];
 
 int activeCam = 0;
@@ -242,7 +243,7 @@ const int sharkfinNumber = 1;
 SharkFin fins[sharkfinNumber];
 
 const float duration = 30.0f;  // 30 seconds duration
-float elapsedTime = 0.0f;     
+float elapsedTime = 0.0f;
 int difficulty = 0;
 
 inline double clamp(const double x, const double min, const double max) {
@@ -253,7 +254,7 @@ inline int clampi(const int x, const int min, const int max) {
 	return (x < min ? min : (x > max ? max : x));
 }
 
-void renderEverything(int *objId)
+void renderEverything(int* objId)
 {
 	GLint loc;
 
@@ -513,7 +514,7 @@ void renderEverything(int *objId)
 	glDisable(GL_BLEND);
 }
 
-bool isColliding(float radius1, float *center1, float radius2, float *center2) {
+bool isColliding(float radius1, float* center1, float radius2, float* center2) {
 	// get the distance between the centers sqrt((x1-x2)^2 + (y1-y2)^2 + (z1-z2)^2)
 	float center_diff = sqrt(pow(center1[0] - center2[0], 2) + pow(center1[1] - center2[1], 2) + pow(center1[2] - center2[2], 2));
 	//get the total length of both radii combined
@@ -571,7 +572,7 @@ void handleCollisionStatic(int index)
 	//vector that dictates what direction the objects will go when they collide
 	float centerVector[3] = { boat.bb_center[0] - obstacles[index].center[0], boat.bb_center[1] - obstacles[index].center[1], boat.bb_center[2] - obstacles[index].center[2] };
 	normalize(centerVector);
-	
+
 	//relative speed of the collision expressed in a 3d vector
 	float relativeSpeed[3] = { boat.speed * cos(boat.direction), boat.speed * sin(boat.direction), 0.0f };
 
@@ -698,7 +699,7 @@ void aiRecursive_render(const aiNode* nd, vector<struct MyMesh>& myMeshes, GLuin
 	popMatrix(MODEL);
 }
 
-void render_flare(FLARE_DEF *flare, int lx, int ly, int *m_viewport) {  //lx, ly represent the projected position of light on viewport
+void render_flare(FLARE_DEF* flare, int lx, int ly, int* m_viewport) {  //lx, ly represent the projected position of light on viewport
 
 	int     dx, dy;          // Screen coordinates of "destination"
 	int     px, py;          // Screen coordinates of flare element
@@ -723,8 +724,8 @@ void render_flare(FLARE_DEF *flare, int lx, int ly, int *m_viewport) {  //lx, ly
 	cy = m_viewport[1] + (int)(0.5f * (float)m_viewport[3]) - 1;
 
 	// Compute how far off-center the flare source is.
-	maxflaredist = sqrt(cx*cx + cy * cy);
-	flaredist = sqrt((lx - cx)*(lx - cx) + (ly - cy)*(ly - cy));
+	maxflaredist = sqrt(cx * cx + cy * cy);
+	flaredist = sqrt((lx - cx) * (lx - cx) + (ly - cy) * (ly - cy));
 	scaleDistance = (maxflaredist - flaredist) / maxflaredist;
 	flaremaxsize = (int)(m_viewport[2] * flare->fMaxSize);
 	flarescale = (int)(m_viewport[2] * flare->fScale);
@@ -741,13 +742,13 @@ void render_flare(FLARE_DEF *flare, int lx, int ly, int *m_viewport) {  //lx, ly
 	for (i = 0; i < flare->nPieces; ++i)
 	{
 		// Position is interpolated along line between start and destination.
-		px = (int)((1.0f - flare->element[i].fDistance)*lx + flare->element[i].fDistance*dx);
-		py = (int)((1.0f - flare->element[i].fDistance)*ly + flare->element[i].fDistance*dy);
+		px = (int)((1.0f - flare->element[i].fDistance) * lx + flare->element[i].fDistance * dx);
+		py = (int)((1.0f - flare->element[i].fDistance) * ly + flare->element[i].fDistance * dy);
 		px = clampi(px, m_viewport[0], screenMaxCoordX);
 		py = clampi(py, m_viewport[1], screenMaxCoordY);
 
 		// Piece size are 0 to 1; flare size is proportion of screen width; scale by flaredist/maxflaredist.
-		width = (int)(scaleDistance*flarescale*flare->element[i].fSize);
+		width = (int)(scaleDistance * flarescale * flare->element[i].fSize);
 
 		// Width gets clamped, to allows the off-axis flaresto keep a good size without letting the elements get big when centered.
 		if (width > flaremaxsize)  width = flaremaxsize;
@@ -799,7 +800,7 @@ void timer(int value)
 
 	cams[0].pos[0] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * cos(boat.direction * 3.14 / 180);
 	cams[0].pos[1] += ((boat.speed * deltaT) + (1 / 2 * boat.acceleration * pow(deltaT, 2))) * sin(boat.direction * 3.14 / 180);
-	
+
 	//pass deltaT to seconds
 	//printf("%f\n", elapsedTime);
 	float dt = (1 / deltaT) / 600.0f;
@@ -813,7 +814,7 @@ void timer(int value)
 	if (elapsedTime >= duration) {
 		difficulty = 1;
 	}
-	
+
 	for (int i = 0; i < sharkfinNumber; i++)
 	{
 		if ((abs(fins[i].pos[0] - fins[i].initialPos[0]) > 10.0f) || ((abs(fins[i].pos[1] - fins[i].initialPos[1])) > 10.0f))
@@ -827,9 +828,9 @@ void timer(int value)
 			fins[i].angle = atan(fins[i].slope);
 			fins[i].pos[0] = fins[i].initialPos[0];
 			fins[i].pos[1] = fins[i].initialPos[1];
-			fins[i].direction = -(180/3.1415) * atan2(boat.pos[1] - fins[i].pos[1], boat.pos[0] - fins[i].pos[0]);
+			fins[i].direction = -(180 / 3.1415) * atan2(boat.pos[1] - fins[i].pos[1], boat.pos[0] - fins[i].pos[0]);
 		}
-		
+
 
 		// Keep the angle between 0 and 360 degrees
 		if (fins[i].angle > 3.14) { fins[i].angle -= 3.14f; }
@@ -847,7 +848,7 @@ void timer(int value)
 			fins[i].pos[0] += (fins[i].slope * deltaT) * cos(fins[i].angle);  // X position
 			fins[i].pos[1] += (fins[i].slope * deltaT) * sin(fins[i].angle);  // Y position
 		}
-		
+
 
 		fins[i].bb_center[0] = fins[i].pos[0];
 		fins[i].bb_center[1] = fins[i].pos[1];
@@ -862,12 +863,12 @@ void timer(int value)
 	//boat moving forwards (press 'a' or 'd')
 	if ((boat.acceleration > 0) && (boat.speed >= 0))
 	{
-		boat.acceleration -= 3*decayy;
+		boat.acceleration -= 3 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
 	else if ((boat.acceleration < 0) && (boat.speed > 0))
 	{
-		boat.acceleration -= 2*decayy;
+		boat.acceleration -= 2 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 		if (boat.speed <= 0)
 		{
@@ -875,17 +876,17 @@ void timer(int value)
 			boat.speed = 0;
 		}
 	}
-	
+
 
 	//boat moving backwards (press 's')
 	if ((boat.acceleration < 0) && (boat.speed <= 0))
 	{
-		boat.acceleration += 3*decayy;
+		boat.acceleration += 3 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
 	else if ((boat.acceleration >= 0) && (boat.speed < 0))
 	{
-		boat.acceleration += 2*decayy;
+		boat.acceleration += 2 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 		if (boat.speed >= 0)
 		{
@@ -897,7 +898,7 @@ void timer(int value)
 	{
 		boat.speed = 10.0f;
 	}
-	
+
 
 	boat.bb_center[0] = boat.pos[0] + (sqrt(2) / 2) * cos(((boat.direction * 3.1415) / 180) + 3.1415 / 4);
 	boat.bb_center[1] = boat.pos[1] + (sqrt(2) / 2) * sin(((boat.direction * 3.1415) / 180) + 3.1415 / 4);
@@ -950,12 +951,12 @@ void timer(int value)
 	}
 	if ((boat.acceleration < 0) && (boat.speed <= 0)) //when the boat starts accelerating backwards
 	{
-		boat.acceleration += 7*decayy;
+		boat.acceleration += 7 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
 	else if ((boat.acceleration >= 0) && (boat.speed < 0)) // when the boat starts decelerating
 	{
-		boat.acceleration += 6*decayy;
+		boat.acceleration += 6 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 		if (boat.speed >= 0)
 		{
@@ -1065,6 +1066,63 @@ void changeSize(int w, int h) {
 //
 // Render stufff
 //
+
+
+static void draw_mirror(void)  //especular ground with quad
+{
+	GLint loc;
+	//objId = 2;   specular mirror
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+	glUniform4fv(loc, 1, myMeshes[2].mat.ambient);
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+	glUniform4fv(loc, 1, myMeshes[2].mat.diffuse);
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+	glUniform4fv(loc, 1, myMeshes[2].mat.specular);
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+	glUniform1f(loc, myMeshes[2].mat.shininess);
+	pushMatrix(MODEL);
+	rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
+	computeDerivedMatrix(PROJ_VIEW_MODEL);
+	glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+	glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+	computeNormalMatrix3x3();
+	glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+	glUniform1i(texMode_uniformId, 2);
+	glBindVertexArray(myMeshes[2].vao);
+	glDrawElements(myMeshes[2].type, myMeshes[2].numIndexes, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(0);
+	popMatrix(MODEL);
+}
+
+static void draw_mirror(void) //specular mirror with cube
+{
+	GLint loc;
+	//objId = 3;   
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+	glUniform4fv(loc, 1, myMeshes[3].mat.ambient);
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+	glUniform4fv(loc, 1, myMeshes[3].mat.diffuse);
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+	glUniform4fv(loc, 1, myMeshes[3].mat.specular);
+	loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+	glUniform1f(loc, myMeshes[3].mat.shininess);
+	pushMatrix(MODEL);
+	scale(MODEL, 45.0f, 0.005f, 45.0f);
+	translate(MODEL, -0.5f, -0.5f, -0.5f); //centrar o cubo na origem
+	computeDerivedMatrix(PROJ_VIEW_MODEL);
+	glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+	glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+	computeNormalMatrix3x3();
+	glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+	glUniform1i(texMode_uniformId, 2);
+	glBindVertexArray(myMeshes[3].vao);
+	glDrawElements(myMeshes[3].type, myMeshes[3].numIndexes, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(0);
+	popMatrix(MODEL);
+}
+
 
 void renderScene(void) {
 
@@ -1235,6 +1293,65 @@ void renderScene(void) {
 
 	objId = 0;
 
+	if (camY > 0.0f) {  //camera in front of the floor so render reflections and shadows. Inner product between the viewing direction and the normal of the ground
+
+		glEnable(GL_STENCIL_TEST);        // Escrever 1 no stencil buffer onde se for desenhar a reflexão e a sombra
+		glStencilFunc(GL_NEVER, 0x1, 0x1);
+		glStencilOp(GL_REPLACE, GL_REPLACE, GL_REPLACE);
+
+		// Fill stencil buffer with Ground shape; never rendered into color buffer
+		draw_mirror();
+
+		glUniform1i(shadowMode_uniformId, 0);  //iluminação phong
+
+		// Desenhar apenas onde o stencil buffer esta a 1
+		glStencilFunc(GL_EQUAL, 0x1, 0x1);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
+
+		// Render the reflected geometry
+		sunLightPos[1] *= (-1.0f);  //mirror the position of light
+		multMatrixPoint(VIEW, sunLightPos, res);
+
+		glUniform4fv(lPos_uniformId, 1, res);
+		pushMatrix(MODEL);
+		scale(MODEL, 1.0f, -1.0f, 1.0f);
+		glCullFace(GL_FRONT);
+		draw_objects();
+		glCullFace(GL_BACK);
+		popMatrix(MODEL);
+
+		lightPos[1] *= (-1.0f);  //reset the light position
+		multMatrixPoint(VIEW, lightPos, res);
+		glUniform4fv(lPos_uniformId, 1, res);
+
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);		// Blend specular Ground with reflected geometry
+		draw_mirror();
+
+		// Render the Shadows
+		glUniform1i(shadowMode_uniformId, 1);  //Render with constant color
+		shadow_matrix(mat, plano_chao, lightPos);
+
+		glDisable(GL_DEPTH_TEST); //To force the shadow geometry to be rendered even if behind the floor
+
+		//Dark the color stored in color buffer
+		glBlendFunc(GL_DST_COLOR, GL_ZERO);
+		glStencilOp(GL_KEEP, GL_KEEP, GL_ZERO);
+
+		pushMatrix(MODEL);
+		multMatrix(MODEL, mat);
+		draw_objects();
+		popMatrix(MODEL);
+
+		glDisable(GL_STENCIL_TEST);
+		glDisable(GL_BLEND);
+		glEnable(GL_DEPTH_TEST);
+
+		//render the geometry
+		glUniform1i(shadowMode_uniformId, 0);
+		draw_objects();
+	}
+
 	renderEverything(&objId);
 
 	objId = 0;
@@ -1270,13 +1387,13 @@ void renderScene(void) {
 
 	char timer_UI_MSG[20];
 	int hours, minutes, seconds;
-	
+
 	seconds = int(elapsedTime);
 	minutes = seconds / 60;
 	hours = seconds / 3600;
 	seconds -= minutes * 60;
 	minutes -= hours * 60;
-	snprintf(timer_UI_MSG, 20,"H:%d M:%d S:%d", hours, minutes, seconds);
+	snprintf(timer_UI_MSG, 20, "H:%d M:%d S:%d", hours, minutes, seconds);
 	const char pause_UI_MSG[8] = "Paused!";
 
 	//Render text (bitmap fonts) in screen coordinates. So use ortoghonal projection with viewport coordinates.
@@ -1297,9 +1414,9 @@ void renderScene(void) {
 	ortho(m_viewport[0], m_viewport[0] + m_viewport[2] - 1, m_viewport[1], m_viewport[1] + m_viewport[3] - 1, -1, 1);
 	if (isPaused)
 	{
-		RenderText(shaderText, pause_UI_MSG, m_viewport[2]/2 - 300, m_viewport[3] / 2, 3.0f, 0.3, 0.7f, 0.9f);
+		RenderText(shaderText, pause_UI_MSG, m_viewport[2] / 2 - 300, m_viewport[3] / 2, 3.0f, 0.3, 0.7f, 0.9f);
 	}
-	else 
+	else
 	{
 		RenderText(shaderText, lives_UI_MSG, 10.0f, m_viewport[3] - 50, 1.0f, 0.5f, 0.8f, 0.2f);
 	}
@@ -1388,7 +1505,7 @@ void processKeys(unsigned char key, int xx, int yy)
 		if (isPaused == true)
 		{
 			deltaT = 0;
-			
+
 		}
 		else
 		{
@@ -1568,6 +1685,7 @@ GLuint setupShaders() {
 	tex_cube_loc = glGetUniformLocation(shader.getProgramIndex(), "cubeMap");
 
 	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode"); // different modes of texturing
+	shadowMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "shadowMode");
 
 	normalMap_loc = glGetUniformLocation(shader.getProgramIndex(), "normalMap");
 	specularMap_loc = glGetUniformLocation(shader.getProgramIndex(), "specularMap");
@@ -1650,7 +1768,7 @@ int init()
 
 	//creation of Mymesh array with VAO Geometry and Material and array of Texture Objs for the model input by the user
 	boatMeshes = createMeshFromAssimp(scene, textureIds);
-	
+
 	//values for the """water"""
 	float amb[] = { 0.2f, 0.15f, 0.1f, 1.0f };
 	float diff[] = { 0.0f, 0.0f, 13.0f, 0.0f };
@@ -1770,7 +1888,7 @@ int init()
 	obstacles[houseNumber + 2].radius = 1.0f; //sqrt(0.75 * 4);
 
 	//billboard
-	amesh = createQuad(3.0f,3.0f);
+	amesh = createQuad(3.0f, 3.0f);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
 	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
@@ -1781,7 +1899,7 @@ int init()
 	objectNumber++;
 
 	//make the houses on the left side
-	for (int i = 0; i < houseNumber/2; i++)
+	for (int i = 0; i < houseNumber / 2; i++)
 	{
 		//base
 		amesh = createCube();
@@ -1802,12 +1920,12 @@ int init()
 		amesh.mat.texCount = texcount;
 		myMeshes.push_back(amesh);
 		obstacles[i].center[0] = 10.0f + 1.0f;
-		obstacles[i].center[1] = -5.0f + 2*i + 1.0f;
+		obstacles[i].center[1] = -5.0f + 2 * i + 1.0f;
 		obstacles[i].center[2] = 0.0f + 1.0f;
 		obstacles[i].radius = 1.0f; //sqrt(0.75 * 4);
 	}
 	//make the houses on the right side
-	for (int i = 0; i < houseNumber/2; i++)
+	for (int i = 0; i < houseNumber / 2; i++)
 	{
 		//base
 		amesh = createCube();
@@ -1862,31 +1980,31 @@ int init()
 		switch (i % 6) {
 		case 5:
 			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = -5.0f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 5.0f + 5 * (i-5);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 5.0f + 5 * (i - 5);
 			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
 			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
 			break;
 		case 4:
 			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = -0.5f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 10.0f + 5 * (i-4);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 10.0f + 5 * (i - 4);
 			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
 			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
 			break;
 		case 3:
 			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 4.0f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 15.0f + 5 * (i-3);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 15.0f + 5 * (i - 3);
 			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
 			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
 			break;
 		case 2:
 			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 1.0f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 20.0f + 5 * (i-2);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 20.0f + 5 * (i - 2);
 			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
 			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
 			break;
 		case 1:
 			obstacles[(obstacleNumber - buoyNumber) + i].center[0] = 7.75f;
-			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 20.0f + 5 * (i-1);
+			obstacles[(obstacleNumber - buoyNumber) + i].center[1] = 20.0f + 5 * (i - 1);
 			obstacles[(obstacleNumber - buoyNumber) + i].center[2] = 0.0f;
 			obstacles[(obstacleNumber - buoyNumber) + i].radius = 0.8f;
 			break;
@@ -2065,4 +2183,3 @@ void    loadFlareFile(FLARE_DEF* flare, char* filename)
 	}
 	else printf("Flare file opening error\n");
 }
-
