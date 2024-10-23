@@ -1095,7 +1095,7 @@ static void draw_mirror(void)  //especular ground with quad
 	popMatrix(MODEL);
 }
 
-static void draw_mirror(void) //specular mirror with cube
+static void draw_mirror1(void) //specular mirror with cube
 {
 	GLint loc;
 	//objId = 3;   
@@ -1127,6 +1127,10 @@ static void draw_mirror(void) //specular mirror with cube
 void renderScene(void) {
 
 	GLint loc;
+
+	float resol[4];
+	float mat[16];
+	GLfloat plano_chao[4] = { 0,1,0,0 };
 
 	FrameCount++;
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1310,19 +1314,19 @@ void renderScene(void) {
 
 		// Render the reflected geometry
 		sunLightPos[1] *= (-1.0f);  //mirror the position of light
-		multMatrixPoint(VIEW, sunLightPos, res);
+		multMatrixPoint(VIEW, sunLightPos, resol);
 
-		glUniform4fv(lPos_uniformId, 1, res);
+		glUniform4fv(sunPos_uniformId, 1, resol);
 		pushMatrix(MODEL);
 		scale(MODEL, 1.0f, -1.0f, 1.0f);
 		glCullFace(GL_FRONT);
-		draw_objects();
+		renderEverything(&objId);
 		glCullFace(GL_BACK);
 		popMatrix(MODEL);
 
-		lightPos[1] *= (-1.0f);  //reset the light position
-		multMatrixPoint(VIEW, lightPos, res);
-		glUniform4fv(lPos_uniformId, 1, res);
+		sunLightPos[1] *= (-1.0f);  //reset the light position
+		multMatrixPoint(VIEW, sunLightPos, resol);
+		glUniform4fv(sunPos_uniformId, 1, resol);
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);		// Blend specular Ground with reflected geometry
@@ -1330,7 +1334,7 @@ void renderScene(void) {
 
 		// Render the Shadows
 		glUniform1i(shadowMode_uniformId, 1);  //Render with constant color
-		shadow_matrix(mat, plano_chao, lightPos);
+		shadow_matrix(mat, plano_chao, sunLightPos);
 
 		glDisable(GL_DEPTH_TEST); //To force the shadow geometry to be rendered even if behind the floor
 
@@ -1340,7 +1344,7 @@ void renderScene(void) {
 
 		pushMatrix(MODEL);
 		multMatrix(MODEL, mat);
-		draw_objects();
+		renderEverything(&objId);
 		popMatrix(MODEL);
 
 		glDisable(GL_STENCIL_TEST);
@@ -1349,10 +1353,13 @@ void renderScene(void) {
 
 		//render the geometry
 		glUniform1i(shadowMode_uniformId, 0);
-		draw_objects();
+		renderEverything(&objId);
 	}
-
-	renderEverything(&objId);
+	else {
+		glUniform1i(shadowMode_uniformId, 0);
+		draw_mirror();
+		renderEverything(&objId);
+	}
 
 	objId = 0;
 
