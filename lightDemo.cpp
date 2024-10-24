@@ -1622,7 +1622,7 @@ int init()
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 	Texture2D_Loader(TextureArray, "tree.png", 3);
 
-	const char* filenames[] = { "posx.png", "negx.png", "posy.png", "negy.png", "posz.png", "negz.png" };
+	const char* filenames[] = { "posx.jpg", "negx.jpg", "posy.jpg", "negy.jpg", "posz.jpg", "negz.jpg" };
 
 	TextureCubeMap_Loader(TextureArray, filenames, 4);
 
