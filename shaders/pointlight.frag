@@ -237,7 +237,7 @@ void main() {
 	}
 	else if (texMode == 6)
 	{
-		texel = texture(texmap3, DataIn.tex_coord); // Use texmap3 for particles
+		texel = texture(texmap4, DataIn.tex_coord); // Use texmap3 for particles
 		finalColor = mat.diffuse * texel;
 	}
 	else

@@ -44,6 +44,8 @@
 using namespace std;
 
 #define CAPTION "AVT Demo: Phong Shading and Text rendered with FreeType"
+#define frand()			((float)rand()/RAND_MAX)
+
 int WindowHandle = 0;
 int WinX = 1024, WinY = 768;
 
@@ -165,6 +167,8 @@ float lightScreenPos[3];
 //number of objects to be drawn
 int objectNumber = 0;
 
+int fireworks = 0;
+
 //pause variable
 bool isPaused = false;
 
@@ -238,6 +242,19 @@ struct SharkFin {
 	const float bb_radius = 0.5f;
 	float bb_center[3] = { 0.0f, 0.0f, 0.0f };
 };
+
+typedef struct {
+	float	life;		// vida
+	float	fade;		// fade
+	float	r, g, b;    // color
+	GLfloat x, y, z;    // posi‹o
+	GLfloat vx, vy, vz; // velocidade 
+	GLfloat ax, ay, az; // acelera‹o
+} Particle;
+
+Particle particula[1500];
+int dead_num_particles = 0;
+
 // Shark fins
 const int sharkfinNumber = 1;
 SharkFin fins[sharkfinNumber];
@@ -252,6 +269,62 @@ inline double clamp(const double x, const double min, const double max) {
 
 inline int clampi(const int x, const int min, const int max) {
 	return (x < min ? min : (x > max ? max : x));
+}
+
+void updateParticles()
+{
+	int i;
+	float h;
+
+	/* Método de Euler de integração de eq. diferenciais ordinárias
+	h representa o step de tempo; dv/dt = a; dx/dt = v; e conhecem-se os valores iniciais de x e v */
+
+	//h = 0.125f;
+	h = 0.033;
+	if (fireworks) {
+
+		for (i = 0; i < 1500; i++)
+		{
+			particula[i].x += (h * particula[i].vx);
+			particula[i].y += (h * particula[i].vy);
+			particula[i].z += (h * particula[i].vz);
+			particula[i].vx += (h * particula[i].ax);
+			particula[i].vy += (h * particula[i].ay);
+			particula[i].vz += (h * particula[i].az);
+			particula[i].life -= particula[i].fade;
+		}
+	}
+}
+
+void iniParticles(void)
+{
+	GLfloat v, theta, phi;
+	int i;
+
+	for (i = 0; i < 1500; i++)
+	{
+		v = 0.8 * frand() + 0.2;
+		phi = frand() * 3.14159265;
+		theta = 2.0 * frand() * 3.14159265;
+
+		particula[i].x = 0.0f;
+		particula[i].y = 10.0f;
+		particula[i].z = 0.0f;
+		particula[i].vx = v * cos(theta) * sin(phi);
+		particula[i].vy = v * cos(phi);
+		particula[i].vz = v * sin(theta) * sin(phi);
+		particula[i].ax = 0.1f; /* simular um pouco de vento */
+		particula[i].ay = -0.15f; /* simular a aceleração da gravidade */
+		particula[i].az = 0.0f;
+
+		/* tom amarelado que vai ser multiplicado pela textura que varia entre branco e preto */
+		particula[i].r = 0.882f;
+		particula[i].g = 0.552f;
+		particula[i].b = 0.211f;
+
+		particula[i].life = 1.0f;		/* vida inicial */
+		particula[i].fade = 0.0025f;	    /* step de decréscimo da vida para cada iteração */
+	}
 }
 
 void aiRecursive_render(const aiNode* nd, vector<struct MyMesh>& myMeshes, GLuint*& textureIds)
@@ -363,6 +436,7 @@ void aiRecursive_render(const aiNode* nd, vector<struct MyMesh>& myMeshes, GLuin
 void renderEverything(int *objId)
 {
 	GLint loc;
+	float particle_color[4];
 
 	//render the first few opaque objects (water,boat, paddle, 2 houses...)
 	for (int i = 0; i < objectNumber; ++i) {
@@ -520,6 +594,66 @@ void renderEverything(int *objId)
 	}
 	*objId = *objId + houseNumber;
 
+	// sets the model matrix to a scale matrix so that the model fits in the window
+	pushMatrix(MODEL);
+	translate(MODEL, boat.pos[0] - 0.5, boat.pos[2] + 0.12, boat.pos[1] - 0.5);
+	rotate(MODEL, -boat.direction, 0, 1, 0);
+	scale(MODEL, 2 * scaleFactor, 2 * scaleFactor, 2 * scaleFactor);
+	aiRecursive_render(scene->mRootNode, boatMeshes, textureIds);
+	popMatrix(MODEL);
+
+	if (fireworks) {
+
+		updateParticles();
+
+		// draw fireworks particles
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		glDepthMask(GL_FALSE);  // Depth Buffer Read Only
+
+		// Ensure texMode is set to use particle texture (texmap3)
+		glUniform1i(texMode_uniformId, 6); // Set texMode to 3 for particle texture
+
+		for (int i = 0; i < 1500; i++) {
+			if (particula[i].life > 0.0f) /* só desenha as que ainda estão vivas */ {
+				particle_color[0] = particula[i].r;
+				particle_color[1] = particula[i].g;
+				particle_color[2] = particula[i].b;
+				particle_color[3] = particula[i].life;
+
+				// send the material - diffuse color modulated with texture
+				loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+				glUniform4fv(loc, 1, particle_color);
+
+				pushMatrix(MODEL);
+				translate(MODEL, particula[i].x, particula[i].y, particula[i].z);
+
+				// send matrices to OGL
+				computeDerivedMatrix(PROJ_VIEW_MODEL);
+				glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+				glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+				computeNormalMatrix3x3();
+				glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+				glBindVertexArray(myMeshes[26].vao);
+				glDrawElements(myMeshes[26].type, myMeshes[26].numIndexes, GL_UNSIGNED_INT, 0);
+				popMatrix(MODEL);
+			}
+			else {
+				dead_num_particles++;
+			}
+		}
+
+		glDepthMask(GL_TRUE); // Restore writeable depth buffer
+
+		if (dead_num_particles == 1500) {
+			fireworks = 0;
+			dead_num_particles = 0;
+			printf("All particles dead\n");
+		}
+	}
+
 	//render the shark fins based on sharkfinNumber
 	for (int i = 0; i < sharkfinNumber; i++)
 	{
@@ -554,14 +688,6 @@ void renderEverything(int *objId)
 		popMatrix(MODEL);
 		(*objId)++;
 	}
-
-	// sets the model matrix to a scale matrix so that the model fits in the window
-	pushMatrix(MODEL);
-	translate(MODEL, boat.pos[0]- 0.5, boat.pos[2] + 0.12, boat.pos[1]-0.5);
-	rotate(MODEL, -boat.direction, 0, 1, 0);
-	scale(MODEL, 2 * scaleFactor, 2 * scaleFactor, 2 * scaleFactor);
-	aiRecursive_render(scene->mRootNode, boatMeshes, textureIds);
-	popMatrix(MODEL);
 
 	if (flareEffect && isSunActive) {
 
@@ -1208,6 +1334,7 @@ void renderScene(void) {
 	glUniform1i(tex_loc1, checker);
 	glUniform1i(tex_loc2, wood);
 	glUniform1i(tex_loc3, tree);
+	glUniform1i(tex_loc4, particle);
 	glUniform1i(tex_cube_loc, skybox);
 
 	glStencilFunc(GL_NOTEQUAL, 0x1, 0x1);
@@ -1422,7 +1549,18 @@ void processKeys(unsigned char key, int xx, int yy)
 	case 'l':
 		flareEffect = !flareEffect;
 		break;
+	case 'r': // Restart
+		boat.pos[0] = 0.0f;
+		boat.pos[1] = 0.0f;
+		boat.speed = 0.0f;
+		boat.acceleration = 0.0f;
+		boat.angle = 0.0f;
+		boat.direction = 0.0f;
+		boat.lives = 4;
+		elapsedTime = 0;
+		break;
 	}
+	
 }
 
 
