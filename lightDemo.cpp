@@ -99,10 +99,10 @@ GLint isHeadlightsActive_uniformId;
 GLint depthFog_uniformId;	// Fog Depth controller
 GLint fogEnable_uniformId;	// Fog controller
 
-GLuint TextureArray[5];
+GLuint TextureArray[6];
 GLuint FlareTextureArray[5];
 
-GLint tex_loc, tex_loc1, tex_loc2, tex_loc3, tex_cube_loc;
+GLint tex_loc, tex_loc1, tex_loc2, tex_loc3, tex_loc4, tex_cube_loc;
 GLint texMode_uniformId;
 
 // IDs das texturas
@@ -111,6 +111,7 @@ const int checker = 1;
 const int wood = 2;
 const int tree = 3;
 const int skybox = 4;
+const int particle = 6;
 GLuint* textureIds;  // Array of Texture Objects
 
 GLint normalMap_loc;
@@ -607,7 +608,7 @@ void renderEverything(int *objId)
 
 		pushMatrix(MODEL);
 
-		glUniform1i(texMode_uniformId, 6);
+		glUniform1i(texMode_uniformId, 7);
 		translate(MODEL, obstacles[obstacleNumber - buoyNumber + i].center[0], obstacles[obstacleNumber - buoyNumber + i].center[2], obstacles[obstacleNumber - buoyNumber + i].center[1]);
 
 		// send matrices to OGL
@@ -1199,6 +1200,9 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[4]);
 
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[5]);
+
 	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
 	glUniform1i(tex_loc, stone);
 	glUniform1i(tex_loc1, checker);
@@ -1331,6 +1335,10 @@ void renderScene(void) {
 void processKeys(unsigned char key, int xx, int yy)
 {
 	switch (key) {
+	case 'e':
+		fireworks = 1;
+		iniParticles();
+		break;
 
 	case 27:
 		glutLeaveMainLoop();
@@ -1575,6 +1583,7 @@ GLuint setupShaders() {
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
 	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
+	tex_loc4 = glGetUniformLocation(shader.getProgramIndex(), "texmap4");
 	tex_cube_loc = glGetUniformLocation(shader.getProgramIndex(), "cubeMap");
 
 	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode"); // different modes of texturing
@@ -1632,6 +1641,7 @@ int init()
 	Texture2D_Loader(TextureArray, "checker.png", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 	Texture2D_Loader(TextureArray, "tree.png", 3);
+	Texture2D_Loader(TextureArray, "particle.tga", 5);
 
 	const char* filenames[] = { "posx.jpg", "negx.jpg", "posy.jpg", "negy.jpg", "posz.jpg", "negz.jpg" };
 

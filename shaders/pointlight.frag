@@ -40,6 +40,7 @@ uniform sampler2D texmap;
 uniform sampler2D texmap1;
 uniform sampler2D texmap2;
 uniform sampler2D texmap3;
+uniform sampler2D texmap4;
 uniform samplerCube cubeMap;
 
 uniform	sampler2D texUnitDiff;
@@ -233,6 +234,11 @@ void main() {
 	{
 		finalColor = texture(cubeMap, DataIn.skyboxTexCoord);
 		//finalColor = texture(texmap, DataIn.tex_coord);
+	}
+	else if (texMode == 6)
+	{
+		texel = texture(texmap3, DataIn.tex_coord); // Use texmap3 for particles
+		finalColor = mat.diffuse * texel;
 	}
 	else
 	{
