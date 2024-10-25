@@ -44,6 +44,7 @@
 using namespace std;
 
 #define CAPTION "AVT Demo: Phong Shading and Text rendered with FreeType"
+#define frand()			((float)rand()/RAND_MAX)
 int WindowHandle = 0;
 int WinX = 1024, WinY = 768;
 
@@ -81,7 +82,7 @@ GLint sunPos_uniformId;				// Sun light world position
 GLint buoyNumber_uniformId;
 GLint buoyNumber_uniformId2;
 
-GLint buoyConstantAttenuation_unirformId; 
+GLint buoyConstantAttenuation_unirformId;
 GLint buoyLinearAttenuation_unirformId;
 GLint buoyQuadraticAttenuation_unirformId;
 
@@ -99,7 +100,7 @@ GLint isHeadlightsActive_uniformId;
 GLint depthFog_uniformId;	// Fog Depth controller
 GLint fogEnable_uniformId;	// Fog controller
 
-GLuint TextureArray[5];
+GLuint TextureArray[6];
 GLuint FlareTextureArray[5];
 
 GLint tex_loc, tex_loc1, tex_loc2, tex_loc3, tex_cube_loc;
@@ -136,14 +137,7 @@ float r = 10.0f;
 long myTime, timebase = 0, frame = 0;
 char s[32];
 
-float sunLightPos[4] = {-5.0f, 5.0f, 15.0f, 1.0f};		// Sun light world position
-
-// float buoyLightPos[4] =	 { 10.0f, 5.0f, 10.0f, 1.0f };	// Buoy lights world position
-// float buoyLightPos2[4] = { -15.0f, 5.0f, -15.0f, 1.0f };
-// float buoyLightPos3[4] = { 5.0f, 6.0f, -5.0f, 1.0f };
-// float buoyLightPos4[4] = { -5.0f, 6.0f, 5.0f, 1.0f };
-// float buoyLightPos5[4] = { -15.0f, 6.0f, 15.0f, 1.0f };
-// float buoyLightPos6[4] = { 15.0f, 6.0f, 15.0f, 1.0f };
+float sunLightPos[4] = { -5.0f, 5.0f, 15.0f, 1.0f };		// Sun light world position
 
 float buoyLightConstantAttenuation = 2.0f;
 float buoyLightLinearAttenuation = 0.5f;
@@ -166,6 +160,21 @@ int objectNumber = 0;
 
 //pause variable
 bool isPaused = false;
+
+int fireworks = 0;
+
+
+typedef struct {
+	float	life;		// vida
+	float	fade;		// fade
+	float	r, g, b;    // color
+	GLfloat x, y, z;    // posi‹o
+	GLfloat vx, vy, vz; // velocidade 
+	GLfloat ax, ay, az; // acelera‹o
+} Particle;
+
+Particle particula[1500];
+int dead_num_particles = 0;
 
 class Obstacle {
 public:
@@ -242,7 +251,7 @@ const int sharkfinNumber = 1;
 SharkFin fins[sharkfinNumber];
 
 const float duration = 30.0f;  // 30 seconds duration
-float elapsedTime = 0.0f;     
+float elapsedTime = 0.0f;
 int difficulty = 0;
 
 inline double clamp(const double x, const double min, const double max) {
@@ -519,6 +528,58 @@ void renderEverything(int *objId)
 	}
 	*objId = *objId + houseNumber;
 
+	if (fireworks) {
+
+		updateParticles();
+
+		// draw fireworks particles
+		glEnable(GL_BLEND);
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+		glDepthMask(GL_FALSE);  // Depth Buffer Read Only
+
+		// Ensure texMode is set to use particle texture (texmap3)
+		glUniform1i(texMode_uniformId, 3); // Set texMode to 3 for particle texture
+
+		for (int i = 0; i < 1500; i++) {
+			if (particula[i].life > 0.0f) /* só desenha as que ainda estão vivas */ {
+				particle_color[0] = particula[i].r;
+				particle_color[1] = particula[i].g;
+				particle_color[2] = particula[i].b;
+				particle_color[3] = particula[i].life;
+
+				// send the material - diffuse color modulated with texture
+				loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+				glUniform4fv(loc, 1, particle_color);
+
+				pushMatrix(MODEL);
+				translate(MODEL, particula[i].x, particula[i].y, particula[i].z);
+
+				// send matrices to OGL
+				computeDerivedMatrix(PROJ_VIEW_MODEL);
+				glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+				glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+				computeNormalMatrix3x3();
+				glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+				glBindVertexArray(myMeshes[26].vao);
+				glDrawElements(myMeshes[26].type, myMeshes[26].numIndexes, GL_UNSIGNED_INT, 0);
+				popMatrix(MODEL);
+			}
+			else {
+				dead_num_particles++;
+			}
+		}
+
+		glDepthMask(GL_TRUE); // Restore writeable depth buffer
+
+		if (dead_num_particles == 1500) {
+			fireworks = 0;
+			dead_num_particles = 0;
+			printf("All particles dead\n");
+		}
+	}
+
 	//render the shark fins based on sharkfinNumber
 	for (int i = 0; i < sharkfinNumber; i++)
 	{
@@ -628,7 +689,7 @@ void renderEverything(int *objId)
 	glDisable(GL_BLEND);
 }
 
-bool isColliding(float radius1, float *center1, float radius2, float *center2) {
+bool isColliding(float radius1, float* center1, float radius2, float* center2) {
 	// get the distance between the centers sqrt((x1-x2)^2 + (y1-y2)^2 + (z1-z2)^2)
 	float center_diff = sqrt(pow(center1[0] - center2[0], 2) + pow(center1[1] - center2[1], 2) + pow(center1[2] - center2[2], 2));
 	//get the total length of both radii combined
@@ -686,7 +747,7 @@ void handleCollisionStatic(int index)
 	//vector that dictates what direction the objects will go when they collide
 	float centerVector[3] = { boat.bb_center[0] - obstacles[index].center[0], boat.bb_center[1] - obstacles[index].center[1], boat.bb_center[2] - obstacles[index].center[2] };
 	normalize(centerVector);
-	
+
 	//relative speed of the collision expressed in a 3d vector
 	float relativeSpeed[3] = { boat.speed * cos(boat.direction), boat.speed * sin(boat.direction), 0.0f };
 
@@ -793,6 +854,63 @@ void render_flare(FLARE_DEF *flare, int lx, int ly, int *m_viewport) {  //lx, ly
 	glDisable(GL_BLEND);
 }
 
+void updateParticles()
+{
+	int i;
+	float h;
+
+	/* Método de Euler de integração de eq. diferenciais ordinárias
+	h representa o step de tempo; dv/dt = a; dx/dt = v; e conhecem-se os valores iniciais de x e v */
+
+	//h = 0.125f;
+	h = 0.033;
+	if (fireworks) {
+
+		for (i = 0; i < 1500; i++)
+		{
+			particula[i].x += (h * particula[i].vx);
+			particula[i].y += (h * particula[i].vy);
+			particula[i].z += (h * particula[i].vz);
+			particula[i].vx += (h * particula[i].ax);
+			particula[i].vy += (h * particula[i].ay);
+			particula[i].vz += (h * particula[i].az);
+			particula[i].life -= particula[i].fade;
+		}
+	}
+}
+
+void iniParticles(void)
+{
+	GLfloat v, theta, phi;
+	int i;
+
+	for (i = 0; i < 1500; i++)
+	{
+		v = 0.8 * frand() + 0.2;
+		phi = frand() * 3.14159265;
+		theta = 2.0 * frand() * 3.14159265;
+
+		particula[i].x = 0.0f;
+		particula[i].y = 10.0f;
+		particula[i].z = 0.0f;
+		particula[i].vx = v * cos(theta) * sin(phi);
+		particula[i].vy = v * cos(phi);
+		particula[i].vz = v * sin(theta) * sin(phi);
+		particula[i].ax = 0.1f; /* simular um pouco de vento */
+		particula[i].ay = -0.15f; /* simular a aceleração da gravidade */
+		particula[i].az = 0.0f;
+
+		/* tom amarelado que vai ser multiplicado pela textura que varia entre branco e preto */
+		particula[i].r = 0.882f;
+		particula[i].g = 0.552f;
+		particula[i].b = 0.211f;
+
+		particula[i].life = 1.0f;		/* vida inicial */
+		particula[i].fade = 0.0025f;	    /* step de decréscimo da vida para cada iteração */
+	}
+}
+
+
 void timer(int value)
 {
 	std::ostringstream oss;
@@ -822,7 +940,7 @@ void timer(int value)
 	if (elapsedTime >= duration) {
 		difficulty = 1;
 	}
-	
+
 	for (int i = 0; i < sharkfinNumber; i++)
 	{
 		if ((abs(fins[i].pos[0] - fins[i].initialPos[0]) > 10.0f) || ((abs(fins[i].pos[1] - fins[i].initialPos[1])) > 10.0f))
@@ -836,9 +954,9 @@ void timer(int value)
 			fins[i].angle = atan(fins[i].slope);
 			fins[i].pos[0] = fins[i].initialPos[0];
 			fins[i].pos[1] = fins[i].initialPos[1];
-			fins[i].direction = -(180/3.1415) * atan2(boat.pos[1] - fins[i].pos[1], boat.pos[0] - fins[i].pos[0]);
+			fins[i].direction = -(180 / 3.1415) * atan2(boat.pos[1] - fins[i].pos[1], boat.pos[0] - fins[i].pos[0]);
 		}
-		
+
 
 		// Keep the angle between 0 and 360 degrees
 		if (fins[i].angle > 3.14) { fins[i].angle -= 3.14f; }
@@ -856,7 +974,7 @@ void timer(int value)
 			fins[i].pos[0] += (fins[i].slope * deltaT) * cos(fins[i].angle);  // X position
 			fins[i].pos[1] += (fins[i].slope * deltaT) * sin(fins[i].angle);  // Y position
 		}
-		
+
 
 		fins[i].bb_center[0] = fins[i].pos[0];
 		fins[i].bb_center[1] = fins[i].pos[1];
@@ -871,12 +989,12 @@ void timer(int value)
 	//boat moving forwards (press 'a' or 'd')
 	if ((boat.acceleration > 0) && (boat.speed >= 0))
 	{
-		boat.acceleration -= 3*decayy;
+		boat.acceleration -= 3 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
 	else if ((boat.acceleration < 0) && (boat.speed > 0))
 	{
-		boat.acceleration -= 2*decayy;
+		boat.acceleration -= 2 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 		if (boat.speed <= 0)
 		{
@@ -884,17 +1002,17 @@ void timer(int value)
 			boat.speed = 0;
 		}
 	}
-	
+
 
 	//boat moving backwards (press 's')
 	if ((boat.acceleration < 0) && (boat.speed <= 0))
 	{
-		boat.acceleration += 3*decayy;
+		boat.acceleration += 3 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
 	else if ((boat.acceleration >= 0) && (boat.speed < 0))
 	{
-		boat.acceleration += 2*decayy;
+		boat.acceleration += 2 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 		if (boat.speed >= 0)
 		{
@@ -959,12 +1077,12 @@ void timer(int value)
 	}
 	if ((boat.acceleration < 0) && (boat.speed <= 0)) //when the boat starts accelerating backwards
 	{
-		boat.acceleration += 7*decayy;
+		boat.acceleration += 7 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 	}
 	else if ((boat.acceleration >= 0) && (boat.speed < 0)) // when the boat starts decelerating
 	{
-		boat.acceleration += 6*decayy;
+		boat.acceleration += 6 * decayy;
 		boat.speed += boat.acceleration * deltaT;
 		if (boat.speed >= 0)
 		{
@@ -1080,6 +1198,9 @@ void renderScene(void) {
 	GLint loc;
 
 	FrameCount++;
+	float pos[3], right[3], up[3];
+	float particle_color[4];
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	// load identity matrices
 	loadIdentity(VIEW);
@@ -1333,6 +1454,10 @@ void processKeys(unsigned char key, int xx, int yy)
 	case 27:
 		glutLeaveMainLoop();
 		break;
+	case 'e':
+		fireworks = 1;
+		iniParticles();
+		break;
 	case 'm': glEnable(GL_MULTISAMPLE); break;
 	case 'k': glDisable(GL_MULTISAMPLE); break;
 
@@ -1411,6 +1536,16 @@ void processKeys(unsigned char key, int xx, int yy)
 		break;
 	case 'l':
 		flareEffect = !flareEffect;
+
+	case 'r': // Restart
+		boat.pos[0] = 0.0f;
+		boat.pos[1] = 0.0f;
+		boat.speed = 0.0f;
+		boat.acceleration = 0.0f;
+		boat.angle = 0.0f;
+		boat.direction = 0.0f;
+		//boat.lives = 4;
+		elapsedTime = 0;
 		break;
 	}
 }
@@ -1625,11 +1760,12 @@ int init()
 	camY = r * sin(beta * 3.14f / 180.0f);
 
 	//Texture Object definition
-	glGenTextures(5, TextureArray);
+	glGenTextures(6, TextureArray);
 	Texture2D_Loader(TextureArray, "stone.tga", 0);
 	Texture2D_Loader(TextureArray, "checker.png", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 	Texture2D_Loader(TextureArray, "tree.png", 3);
+	Texture2D_Loader(TextureArray, "particle.tga", 3);
 
 	const char* filenames[] = { "posx.jpg", "negx.jpg", "posy.jpg", "negy.jpg", "posz.jpg", "negz.jpg" };
 
@@ -1706,7 +1842,7 @@ int init()
 	myMeshes.push_back(amesh);
 	objectNumber++;
 	//head1
-	amesh = createCone(0.25, 0.25, 2);
+	amesh = createCube();
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
 	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
@@ -1716,7 +1852,7 @@ int init()
 	myMeshes.push_back(amesh);
 	objectNumber++;
 	//head2
-	amesh = createCone(0.25, 0.25, 2);
+	amesh = createCube();
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
 	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
@@ -1912,11 +2048,9 @@ int init()
 
 	//rear view cam
 	amesh = createQuad(3.0f, 3.0f);
-	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
-	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
-	memcpy(amesh.mat.specular, spec, 4 * sizeof(float));
-	memcpy(amesh.mat.emissive, emissive, 4 * sizeof(float));
-	amesh.mat.shininess = shininess;
+	// create geometry and VAO of the quad for particles
+	//objId = 6;
+	amesh = createQuad(2, 2);
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 
