@@ -1243,6 +1243,7 @@ void renderScene(void) {
 
 	objId = 0;
 
+	glUniform1i(normalMap_loc, false);
 	renderEverything(&objId);
 
 	objId = 0;
@@ -1254,6 +1255,7 @@ void renderScene(void) {
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
 	lookAt(boat.bb_center[0], boat.bb_center[2], boat.bb_center[1], cams[0].pos[0], 0, cams[0].pos[2], 0, 1, 0);
+	glUniform1i(normalMap_loc, false);
 	renderEverything(&objId);
 
 
