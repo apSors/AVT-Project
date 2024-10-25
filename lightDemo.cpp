@@ -1385,6 +1385,10 @@ void renderScene(void) {
 	glStencilFunc(GL_EQUAL, 0x1, 0x1);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_KEEP);
 
+	int m_viewport[4];
+	glGetIntegerv(GL_VIEWPORT, m_viewport);
+
+
 	lookAt(boat.bb_center[0], boat.bb_center[2], boat.bb_center[1], cams[0].pos[0], 0, cams[0].pos[2], 0, 1, 0);
 	glUniform1i(normalMap_loc, false);
 	renderEverything(&objId);
@@ -1425,8 +1429,7 @@ void renderScene(void) {
 	//the glyph contains transparent background colors and non-transparent for the actual character pixels. So we use the blending
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	int m_viewport[4];
-	glGetIntegerv(GL_VIEWPORT, m_viewport);
+	
 
 	//viewer at origin looking down at  negative z direction
 	pushMatrix(MODEL);
