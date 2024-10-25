@@ -253,6 +253,112 @@ inline int clampi(const int x, const int min, const int max) {
 	return (x < min ? min : (x > max ? max : x));
 }
 
+void aiRecursive_render(const aiNode* nd, vector<struct MyMesh>& myMeshes, GLuint*& textureIds)
+{
+	GLint loc;
+
+	// Get node transformation matrix
+	aiMatrix4x4 m = nd->mTransformation;
+	// OpenGL matrices are column major
+	m.Transpose();
+
+	// save model matrix and apply node transformation
+	pushMatrix(MODEL);
+
+	float aux[16];
+	memcpy(aux, &m, sizeof(float) * 16);
+	multMatrix(MODEL, aux);
+
+
+	// draw all meshes assigned to this node
+	for (unsigned int n = 0; n < nd->mNumMeshes; ++n) {
+
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.emissive");
+		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.emissive);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[nd->mMeshes[n]].mat.shininess);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
+		glUniform1i(loc, myMeshes[nd->mMeshes[n]].mat.texCount);
+
+		unsigned int  diffMapCount = 0;  //read 2 diffuse textures
+
+		//devido ao fragment shader suporta 2 texturas difusas simultaneas, 1 especular e 1 normal map
+
+		glUniform1i(normalMap_loc, false);   //GLSL normalMap variable initialized to 0
+		glUniform1i(specularMap_loc, false);
+		glUniform1ui(diffMapCount_loc, 0);
+
+		if (myMeshes[nd->mMeshes[n]].mat.texCount != 0)
+			for (unsigned int i = 0; i < myMeshes[nd->mMeshes[n]].mat.texCount; ++i) {
+
+				//Activate a TU with a Texture Object
+				GLuint TU = myMeshes[nd->mMeshes[n]].texUnits[i];
+				glActiveTexture(GL_TEXTURE0 + TU);
+				glBindTexture(GL_TEXTURE_2D, textureIds[TU]);
+
+				if (myMeshes[nd->mMeshes[n]].texTypes[i] == DIFFUSE) {
+					if (diffMapCount == 0) {
+						diffMapCount++;
+						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff");
+						glUniform1i(loc, TU);
+						glUniform1ui(diffMapCount_loc, diffMapCount);
+					}
+					else if (diffMapCount == 1) {
+						diffMapCount++;
+						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff1");
+						glUniform1i(loc, TU);
+						glUniform1ui(diffMapCount_loc, diffMapCount);
+					}
+					else printf("Only supports a Material with a maximum of 2 diffuse textures\n");
+				}
+				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == SPECULAR) {
+					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitSpec");
+					glUniform1i(loc, TU);
+					glUniform1i(specularMap_loc, true);
+				}
+				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == NORMALS) { //Normal map
+					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitNormalMap");
+					if (normalMapKey)
+						glUniform1i(normalMap_loc, normalMapKey);
+					glUniform1i(loc, TU);
+
+				}
+				else printf("Texture Map not supported\n");
+			}
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// bind VAO
+		glBindVertexArray(myMeshes[nd->mMeshes[n]].vao);
+
+		if (!shader.isProgramValid()) {
+			printf("Program Not Valid!\n");
+			exit(1);
+		}
+		// draw
+		glDrawElements(myMeshes[nd->mMeshes[n]].type, myMeshes[nd->mMeshes[n]].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+	}
+
+	// draw all children
+	for (unsigned int n = 0; n < nd->mNumChildren; ++n) {
+		aiRecursive_render(nd->mChildren[n], myMeshes, textureIds);
+	}
+	popMatrix(MODEL);
+}
+
 void renderEverything(int *objId)
 {
 	GLint loc;
@@ -280,8 +386,9 @@ void renderEverything(int *objId)
 		else if (i == 1)
 		{
 			glUniform1i(texMode_uniformId, wood);
-			translate(MODEL, boat.pos[0] - 0.0f, boat.pos[2], boat.pos[1] - 0.0f);
-			rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
+			translate(MODEL, 0.0f, -1000000.0f, 0.0f);
+			//translate(MODEL, boat.pos[0] - 0.0f, boat.pos[2], boat.pos[1] - 0.0f);
+			//rotate(MODEL, -boat.direction, 0.0f, 1.0f, 0.0f);
 		}
 		//handle of the paddle
 		else if (i == 2) {
@@ -447,6 +554,14 @@ void renderEverything(int *objId)
 		(*objId)++;
 	}
 
+	// sets the model matrix to a scale matrix so that the model fits in the window
+	pushMatrix(MODEL);
+	translate(MODEL, boat.pos[0]- 0.5, boat.pos[2] + 0.12, boat.pos[1]-0.5);
+	rotate(MODEL, -boat.direction, 0, 1, 0);
+	scale(MODEL, 2 * scaleFactor, 2 * scaleFactor, 2 * scaleFactor);
+	aiRecursive_render(scene->mRootNode, boatMeshes, textureIds);
+	popMatrix(MODEL);
+
 	if (flareEffect) {
 
 		int flarePos[2];
@@ -590,112 +705,6 @@ void handleCollisionStatic(int index)
 	boat.speed = -collisionSpeed / 5;
 	//boat.direction = (atan2(centerVector[0], centerVector[2])*180)/3.1415;
 	//boat.angle = (atan2(centerVector[0], centerVector[2]) * 180) / 3.1415;
-}
-
-void aiRecursive_render(const aiNode* nd, vector<struct MyMesh>& myMeshes, GLuint*& textureIds)
-{
-	GLint loc;
-
-	// Get node transformation matrix
-	aiMatrix4x4 m = nd->mTransformation;
-	// OpenGL matrices are column major
-	m.Transpose();
-
-	// save model matrix and apply node transformation
-	pushMatrix(MODEL);
-
-	float aux[16];
-	memcpy(aux, &m, sizeof(float) * 16);
-	multMatrix(MODEL, aux);
-
-
-	// draw all meshes assigned to this node
-	for (unsigned int n = 0; n < nd->mNumMeshes; ++n) {
-
-		// send the material
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.emissive");
-		glUniform4fv(loc, 1, myMeshes[nd->mMeshes[n]].mat.emissive);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, myMeshes[nd->mMeshes[n]].mat.shininess);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.texCount");
-		glUniform1i(loc, myMeshes[nd->mMeshes[n]].mat.texCount);
-
-		unsigned int  diffMapCount = 0;  //read 2 diffuse textures
-
-		//devido ao fragment shader suporta 2 texturas difusas simultaneas, 1 especular e 1 normal map
-
-		glUniform1i(normalMap_loc, false);   //GLSL normalMap variable initialized to 0
-		glUniform1i(specularMap_loc, false);
-		glUniform1ui(diffMapCount_loc, 0);
-
-		if (myMeshes[nd->mMeshes[n]].mat.texCount != 0)
-			for (unsigned int i = 0; i < myMeshes[nd->mMeshes[n]].mat.texCount; ++i) {
-
-				//Activate a TU with a Texture Object
-				GLuint TU = myMeshes[nd->mMeshes[n]].texUnits[i];
-				glActiveTexture(GL_TEXTURE0 + TU);
-				glBindTexture(GL_TEXTURE_2D, textureIds[TU]);
-
-				if (myMeshes[nd->mMeshes[n]].texTypes[i] == DIFFUSE) {
-					if (diffMapCount == 0) {
-						diffMapCount++;
-						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff");
-						glUniform1i(loc, TU);
-						glUniform1ui(diffMapCount_loc, diffMapCount);
-					}
-					else if (diffMapCount == 1) {
-						diffMapCount++;
-						loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitDiff1");
-						glUniform1i(loc, TU);
-						glUniform1ui(diffMapCount_loc, diffMapCount);
-					}
-					else printf("Only supports a Material with a maximum of 2 diffuse textures\n");
-				}
-				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == SPECULAR) {
-					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitSpec");
-					glUniform1i(loc, TU);
-					glUniform1i(specularMap_loc, true);
-				}
-				else if (myMeshes[nd->mMeshes[n]].texTypes[i] == NORMALS) { //Normal map
-					loc = glGetUniformLocation(shader.getProgramIndex(), "texUnitNormalMap");
-					if (normalMapKey)
-						glUniform1i(normalMap_loc, normalMapKey);
-					glUniform1i(loc, TU);
-
-				}
-				else printf("Texture Map not supported\n");
-			}
-
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		// bind VAO
-		glBindVertexArray(myMeshes[nd->mMeshes[n]].vao);
-
-		if (!shader.isProgramValid()) {
-			printf("Program Not Valid!\n");
-			exit(1);
-		}
-		// draw
-		glDrawElements(myMeshes[nd->mMeshes[n]].type, myMeshes[nd->mMeshes[n]].numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-	}
-
-	// draw all children
-	for (unsigned int n = 0; n < nd->mNumChildren; ++n) {
-		aiRecursive_render(nd->mChildren[n], myMeshes, textureIds);
-	}
-	popMatrix(MODEL);
 }
 
 void render_flare(FLARE_DEF *flare, int lx, int ly, int *m_viewport) {  //lx, ly represent the projected position of light on viewport
