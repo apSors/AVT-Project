@@ -562,7 +562,7 @@ void renderEverything(int *objId)
 	aiRecursive_render(scene->mRootNode, boatMeshes, textureIds);
 	popMatrix(MODEL);
 
-	if (flareEffect) {
+	if (flareEffect && isSunActive) {
 
 		int flarePos[2];
 		int m_viewport[4];
@@ -744,7 +744,7 @@ void render_flare(FLARE_DEF *flare, int lx, int ly, int *m_viewport) {  //lx, ly
 
 	// Render each element. To be used Texture Unit 0
 
-	glUniform1i(texMode_uniformId, 4); // draw modulated textured particles 
+	glUniform1i(texMode_uniformId, 0); // draw modulated textured particles 
 	glUniform1i(tex_loc, 0);  //use TU 0
 
 	for (i = 0; i < flare->nPieces; ++i)
