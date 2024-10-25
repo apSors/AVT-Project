@@ -1106,7 +1106,7 @@ void renderScene(void) {
 	aiRecursive_render(scene->mRootNode, boatMeshes, textureIds);
 	popMatrix(MODEL);
 
-	if (flareEffect) {
+	if (flareEffect && isSunActive == true) {
 
 		int flarePos[2];
 		int m_viewport[4];
