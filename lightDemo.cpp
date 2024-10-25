@@ -103,7 +103,7 @@ GLint fogEnable_uniformId;	// Fog controller
 GLuint TextureArray[6];
 GLuint FlareTextureArray[5];
 
-GLint tex_loc, tex_loc1, tex_loc2, tex_loc3, tex_cube_loc;
+GLint tex_loc, tex_loc1, tex_loc2, tex_loc3, tex_loc4, tex_cube_loc;
 GLint texMode_uniformId;
 
 // IDs das texturas
@@ -112,6 +112,7 @@ const int checker = 1;
 const int wood = 2;
 const int tree = 3;
 const int skybox = 4;
+const int particle = 6;
 GLuint* textureIds;  // Array of Texture Objects
 
 GLint normalMap_loc;
@@ -368,9 +369,36 @@ void aiRecursive_render(const aiNode* nd, vector<struct MyMesh>& myMeshes, GLuin
 	popMatrix(MODEL);
 }
 
+void updateParticles()
+{
+	int i;
+	float h;
+
+	/* Método de Euler de integração de eq. diferenciais ordinárias
+	h representa o step de tempo; dv/dt = a; dx/dt = v; e conhecem-se os valores iniciais de x e v */
+
+	//h = 0.125f;
+	h = 0.033;
+	if (fireworks) {
+
+		for (i = 0; i < 1500; i++)
+		{
+			particula[i].x += (h * particula[i].vx);
+			particula[i].y += (h * particula[i].vy);
+			particula[i].z += (h * particula[i].vz);
+			particula[i].vx += (h * particula[i].ax);
+			particula[i].vy += (h * particula[i].ay);
+			particula[i].vz += (h * particula[i].az);
+			particula[i].life -= particula[i].fade;
+		}
+	}
+}
+
 void renderEverything(int *objId)
 {
 	GLint loc;
+
+	float particle_color[4];
 
 	//render the first few opaque objects (water,boat, paddle, 2 houses...)
 	for (int i = 0; i < objectNumber; ++i) {
@@ -388,7 +416,7 @@ void renderEverything(int *objId)
 
 		// """water"""
 		if (i == 0) {
-			glUniform1i(texMode_uniformId, wood);
+			glUniform1i(texMode_uniformId, particle);
 			rotate(MODEL, -90.0f, 1.0f, 0.0f, 0.0f);
 		}
 		// boat
@@ -474,13 +502,6 @@ void renderEverything(int *objId)
 		(*objId)++;
 	}
 
-	// Initial settings for fins' speed and direction:
-	for (int j = 0; j < sharkfinNumber; j++)
-	{
-		if (difficulty == 0) { fins[j].speed = 30.0f; }
-		else if (difficulty == 1) { fins[j].speed = 60.0f; }
-	}
-
 	//render the houses on eachside based on houseNumber
 	for (int j = 0; j < houseNumber; j++) //*2 because a house is a base and a roof
 	{
@@ -527,6 +548,90 @@ void renderEverything(int *objId)
 		(*objId)++;
 	}
 	*objId = *objId + houseNumber;
+
+	//render the shark fins based on sharkfinNumber
+	for (int i = 0; i < sharkfinNumber; i++)
+	{
+		if (difficulty == 0) { fins[i].speed = 30.0f; }
+		else if (difficulty == 1) { fins[i].speed = 60.0f; }
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[*objId].mat.shininess);
+		glUniform1i(texMode_uniformId, 4);
+
+		pushMatrix(MODEL);
+
+		translate(MODEL, fins[i].pos[0], fins[i].pos[2], fins[i].pos[1]); // Adjust for fin's position6
+		rotate(MODEL, fins[i].direction, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(myMeshes[*objId].vao);
+		glDrawElements(myMeshes[*objId].type, myMeshes[*objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		(*objId)++;
+	}
+
+	//// sets the model matrix to a scale matrix so that the model fits in the window
+	//pushMatrix(MODEL);
+	//translate(MODEL, boat.pos[0]- 0.5, boat.pos[2] + 0.12, boat.pos[1]-0.5);
+	//rotate(MODEL, -boat.direction, 0, 1, 0);
+	//scale(MODEL, 2 * scaleFactor, 2 * scaleFactor, 2 * scaleFactor);
+	//aiRecursive_render(scene->mRootNode, boatMeshes, textureIds);
+	//popMatrix(MODEL);
+
+	//render the translucent buoys
+	glEnable(GL_BLEND);
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	for (int i = 0; i < buoyNumber; i++)
+	{
+		// send the material
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.ambient);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.diffuse);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
+		glUniform4fv(loc, 1, myMeshes[*objId].mat.specular);
+		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
+		glUniform1f(loc, myMeshes[*objId].mat.shininess);
+		glUniform1i(texMode_uniformId, checker);
+
+		pushMatrix(MODEL);
+
+		glUniform1i(texMode_uniformId, 6);
+		translate(MODEL, obstacles[obstacleNumber - buoyNumber + i].center[0], obstacles[obstacleNumber - buoyNumber + i].center[2], obstacles[obstacleNumber - buoyNumber + i].center[1]);
+
+		// send matrices to OGL
+		computeDerivedMatrix(PROJ_VIEW_MODEL);
+		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
+		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
+		computeNormalMatrix3x3();
+		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
+
+		// Render mesh
+		glBindVertexArray(myMeshes[*objId].vao);
+		glDrawElements(myMeshes[*objId].type, myMeshes[*objId].numIndexes, GL_UNSIGNED_INT, 0);
+		glBindVertexArray(0);
+
+		popMatrix(MODEL);
+		(*objId)++;
+	}
+	glDisable(GL_BLEND);
+	(*objId)++;
 
 	if (fireworks) {
 
@@ -580,49 +685,6 @@ void renderEverything(int *objId)
 		}
 	}
 
-	//render the shark fins based on sharkfinNumber
-	for (int i = 0; i < sharkfinNumber; i++)
-	{
-		// send the material
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, myMeshes[*objId].mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, myMeshes[*objId].mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, myMeshes[*objId].mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, myMeshes[*objId].mat.shininess);
-		glUniform1i(texMode_uniformId, 4);
-
-		pushMatrix(MODEL);
-
-		translate(MODEL, fins[i].pos[0], fins[i].pos[2], fins[i].pos[1]); // Adjust for fin's position6
-		rotate(MODEL, fins[i].direction, 0.0f, 1.0f, 0.0f); // Rotate fin based on its angle
-
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		// Render mesh
-		glBindVertexArray(myMeshes[*objId].vao);
-		glDrawElements(myMeshes[*objId].type, myMeshes[*objId].numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
-		popMatrix(MODEL);
-		(*objId)++;
-	}
-
-	// sets the model matrix to a scale matrix so that the model fits in the window
-	pushMatrix(MODEL);
-	translate(MODEL, boat.pos[0]- 0.5, boat.pos[2] + 0.12, boat.pos[1]-0.5);
-	rotate(MODEL, -boat.direction, 0, 1, 0);
-	scale(MODEL, 2 * scaleFactor, 2 * scaleFactor, 2 * scaleFactor);
-	aiRecursive_render(scene->mRootNode, boatMeshes, textureIds);
-	popMatrix(MODEL);
-
 	if (flareEffect) {
 
 		int flarePos[2];
@@ -650,43 +712,6 @@ void renderEverything(int *objId)
 		popMatrix(VIEW);
 	}
 
-	//render the translucent buoys
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	for (int i = 0; i < buoyNumber; i++)
-	{
-		// send the material
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.ambient");
-		glUniform4fv(loc, 1, myMeshes[*objId].mat.ambient);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.diffuse");
-		glUniform4fv(loc, 1, myMeshes[*objId].mat.diffuse);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.specular");
-		glUniform4fv(loc, 1, myMeshes[*objId].mat.specular);
-		loc = glGetUniformLocation(shader.getProgramIndex(), "mat.shininess");
-		glUniform1f(loc, myMeshes[*objId].mat.shininess);
-		glUniform1i(texMode_uniformId, checker);
-
-		pushMatrix(MODEL);
-
-		glUniform1i(texMode_uniformId, 6);
-		translate(MODEL, obstacles[obstacleNumber - buoyNumber + i].center[0], obstacles[obstacleNumber - buoyNumber + i].center[2], obstacles[obstacleNumber - buoyNumber + i].center[1]);
-
-		// send matrices to OGL
-		computeDerivedMatrix(PROJ_VIEW_MODEL);
-		glUniformMatrix4fv(vm_uniformId, 1, GL_FALSE, mCompMatrix[VIEW_MODEL]);
-		glUniformMatrix4fv(pvm_uniformId, 1, GL_FALSE, mCompMatrix[PROJ_VIEW_MODEL]);
-		computeNormalMatrix3x3();
-		glUniformMatrix3fv(normal_uniformId, 1, GL_FALSE, mNormal3x3);
-
-		// Render mesh
-		glBindVertexArray(myMeshes[*objId].vao);
-		glDrawElements(myMeshes[*objId].type, myMeshes[*objId].numIndexes, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
-
-		popMatrix(MODEL);
-		(*objId)++;
-	}
-	glDisable(GL_BLEND);
 }
 
 bool isColliding(float radius1, float* center1, float radius2, float* center2) {
@@ -852,31 +877,6 @@ void render_flare(FLARE_DEF *flare, int lx, int ly, int *m_viewport) {  //lx, ly
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_CULL_FACE);
 	glDisable(GL_BLEND);
-}
-
-void updateParticles()
-{
-	int i;
-	float h;
-
-	/* Método de Euler de integração de eq. diferenciais ordinárias
-	h representa o step de tempo; dv/dt = a; dx/dt = v; e conhecem-se os valores iniciais de x e v */
-
-	//h = 0.125f;
-	h = 0.033;
-	if (fireworks) {
-
-		for (i = 0; i < 1500; i++)
-		{
-			particula[i].x += (h * particula[i].vx);
-			particula[i].y += (h * particula[i].vy);
-			particula[i].z += (h * particula[i].vz);
-			particula[i].vx += (h * particula[i].ax);
-			particula[i].vy += (h * particula[i].ay);
-			particula[i].vz += (h * particula[i].az);
-			particula[i].life -= particula[i].fade;
-		}
-	}
 }
 
 void iniParticles(void)
@@ -1320,11 +1320,15 @@ void renderScene(void) {
 	glActiveTexture(GL_TEXTURE4);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, TextureArray[4]);
 
+	glActiveTexture(GL_TEXTURE5);
+	glBindTexture(GL_TEXTURE_2D, TextureArray[5]);
+
 	//Indicar aos tres samplers do GLSL quais os Texture Units a serem usados
 	glUniform1i(tex_loc, stone);
 	glUniform1i(tex_loc1, checker);
 	glUniform1i(tex_loc2, wood);
 	glUniform1i(tex_loc3, tree);
+	glUniform1i(tex_loc4, particle);
 	glUniform1i(tex_cube_loc, skybox);
 
 	glStencilFunc(GL_NOTEQUAL, 0x1, 0x1);
@@ -1708,6 +1712,7 @@ GLuint setupShaders() {
 	tex_loc1 = glGetUniformLocation(shader.getProgramIndex(), "texmap1");
 	tex_loc2 = glGetUniformLocation(shader.getProgramIndex(), "texmap2");
 	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap3");
+	tex_loc3 = glGetUniformLocation(shader.getProgramIndex(), "texmap4");
 	tex_cube_loc = glGetUniformLocation(shader.getProgramIndex(), "cubeMap");
 
 	texMode_uniformId = glGetUniformLocation(shader.getProgramIndex(), "texMode"); // different modes of texturing
@@ -1765,7 +1770,7 @@ int init()
 	Texture2D_Loader(TextureArray, "checker.png", 1);
 	Texture2D_Loader(TextureArray, "lightwood.tga", 2);
 	Texture2D_Loader(TextureArray, "tree.png", 3);
-	Texture2D_Loader(TextureArray, "particle.tga", 3);
+	Texture2D_Loader(TextureArray, "particle.tga", 5);
 
 	const char* filenames[] = { "posx.jpg", "negx.jpg", "posy.jpg", "negy.jpg", "posz.jpg", "negz.jpg" };
 
@@ -1888,7 +1893,7 @@ int init()
 	obstacles[houseNumber + 1].center[2] = 0.0f + 1.0f;
 	obstacles[houseNumber + 1].radius = 1.0f; //sqrt(0.75 * 4);
 
-	//base of the house 1
+	//base of the house 2
 	amesh = createCube();
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -1898,7 +1903,7 @@ int init()
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
 	objectNumber++;
-	//roof of the house 1
+	//roof of the house 2
 	amesh = createCone(0.5, 1.0, 4);
 	memcpy(amesh.mat.ambient, amb, 4 * sizeof(float));
 	memcpy(amesh.mat.diffuse, diff, 4 * sizeof(float));
@@ -2048,8 +2053,7 @@ int init()
 
 	//rear view cam
 	amesh = createQuad(3.0f, 3.0f);
-	// create geometry and VAO of the quad for particles
-	//objId = 6;
+	myMeshes.push_back(amesh);
 	amesh = createQuad(2, 2);
 	amesh.mat.texCount = texcount;
 	myMeshes.push_back(amesh);
